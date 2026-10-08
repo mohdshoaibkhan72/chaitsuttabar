@@ -68,6 +68,7 @@ h2 { font-family: var(--serif); font-size: clamp(2rem, 4.5vw, 3.4rem); line-heig
 /* menu */
 .menu { padding-top: 120px; padding-bottom: 120px; }
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 14px; }
+.tabs button { white-space: nowrap; }
 .tabs button { padding: 9px 16px; border-radius: 99px; border: 1px solid var(--line); font-size: 0.85rem; color: var(--muted); background: var(--glass); backdrop-filter: blur(8px); transition: 0.25s; }
 .tabs button:hover { border-color: var(--gold); color: var(--cream); }
 .tabs button.on { background: var(--gold); color: #1a0d05; border-color: var(--gold); font-weight: 600; }
@@ -106,5 +107,7 @@ footer { margin-top: 56px; font-size: 0.78rem; color: var(--muted); opacity: 0.7
   .visit-grid { grid-template-columns: 1fr; }
   .stats { flex-wrap: wrap; }
   .menu { align-items: flex-start; }
+  .tabs { flex-wrap: nowrap; overflow-x: auto; margin-right: -20px; padding-right: 20px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .reveal { transition: none; opacity: 1; transform: none; } .items li { animation: none; } }

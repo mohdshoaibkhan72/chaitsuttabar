@@ -1,6 +1,9 @@
+import { Vector3 } from 'three'
+
 // Shared, non-reactive scroll state read by the 3D scene every frame.
 export const store = {
   stage: 0, // fractional section index driven by scroll
+  focus: new Vector3(), // world point the camera is looking at (for the shadow light)
   vel: 0, // smoothed scroll velocity, spins the 3D objects
 }
 

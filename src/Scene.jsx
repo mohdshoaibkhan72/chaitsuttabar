@@ -1,9 +1,9 @@
 import React, { Suspense, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, Lightformer, Sparkles, Float } from '@react-three/drei'
+import { Environment, Lightformer, Sparkles } from '@react-three/drei'
 import { STAGES, store } from './store.js'
-import { Kulhad, GlassChai, Samosa, MaggiBowl, Burger, GulabJamun, Kettle, Spices, Lantern, Neon, Platform, Tray, Pop } from './models.jsx'
+import { Kulhad, Samosa, MaggiBowl, Burger, GulabJamun, Pizza, Pasta, Sandwich, ColdCoffee, Drinks, Kettle, Spices, Lantern, Neon, Platform, Tray, Pop, Shadowed } from './models.jsx'
 
 const N = STAGES.length
 const smooth = (x) => x * x * (3 - 2 * x)
@@ -14,11 +14,11 @@ function Rig() {
   const s = useRef(0)
   const { pos, look } = useMemo(() => {
     const offs = [
-      [0, 2.6, 11],
-      [-1, 2.8, 10.5],
-      [1, 2.6, 11],
-      [-1, 3, 10.5],
-      [0, 2.8, 11.5],
+      [0, 2.8, 9.5],
+      [-1, 3, 9.2],
+      [1, 2.8, 9.5],
+      [-1, 3.2, 9.2],
+      [0, 3, 10],
     ]
     return {
       pos: new THREE.CatmullRomCurve3(STAGES.map((st, i) => new THREE.Vector3(st.center[0] + offs[i][0], st.center[1] + offs[i][1], st.center[2] + offs[i][2]))),
@@ -45,12 +45,29 @@ function Rig() {
     const portrait = THREE.MathUtils.clamp((0.8 - aspect) / 0.4, 0, 1)
     l.y -= portrait * 2.4
     p.y += pointer.y * 0.3
-    camera.position.lerp(p, 1)
+    store.focus.set(l.x - shift, 0, l.z)
+    camera.position.copy(p)
     camera.lookAt(l)
     camera.fov = aspect < 0.8 ? 62 : 45
     camera.updateProjectionMatrix()
   })
   return null
+}
+
+// Single shadow-casting light that follows whichever stage the camera is on.
+function Sun() {
+  const ref = useRef()
+  useFrame(() => {
+    const f = store.focus
+    ref.current.position.set(f.x + 3.5, 9, f.z + 5)
+    ref.current.target.position.copy(f)
+    ref.current.target.updateMatrixWorld()
+  })
+  return (
+    <directionalLight ref={ref} intensity={2.4} color="#fff1dc" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0004} shadow-normalBias={0.03} shadow-radius={5}>
+      <orthographicCamera attach="shadow-camera" args={[-4.5, 4.5, 4.5, -4.5, 1, 24]} />
+    </directionalLight>
+  )
 }
 
 // Spins on its own and speeds up while scrolling.
@@ -66,38 +83,58 @@ function Spin({ children, speed = 0.4, ...props }) {
   )
 }
 
-const DISHES = { chai: Kulhad, snacks: Samosa, maggi: MaggiBowl, burgers: Burger, sweets: GulabJamun }
+// scale fits each dish to the platform; every model has its base at y = 0
+export const DISHES = {
+  chai: [Kulhad, 1.25],
+  pizza: [Pizza, 1.1],
+  burgers: [Burger, 1.15],
+  pasta: [Pasta, 1.15],
+  sandwich: [Sandwich, 0.95],
+  maggi: [MaggiBowl, 1.05],
+  coffee: [ColdCoffee, 0.95],
+  drinks: [Drinks, 0.88],
+  snacks: [Samosa, 0.9],
+  sweets: [GulabJamun, 1.2],
+}
+const FLOOR = -1.0
 
 function Stage({ i, children }) {
   return (
     <group position={STAGES[i].center}>
       <Platform />
-      {children}
+      <Shadowed>{children}</Shadowed>
     </group>
   )
 }
 
 function World({ category }) {
-  const Dish = DISHES[category] || Kulhad
+  const [Dish, scale] = DISHES[category] || DISHES.chai
+  const ring = [DISHES.chai, DISHES.pizza, DISHES.coffee, DISHES.pasta, DISHES.burgers]
   return (
     <>
-      <color attach="background" args={['#0b0604']} />
-      <fog attach="fog" args={['#0b0604', 14, 38]} />
+      <color attach="background" args={['#0d0907']} />
+      <fog attach="fog" args={['#0d0907', 16, 42]} />
       <ambientLight intensity={0.35} />
-      <directionalLight position={[6, 10, 6]} intensity={1.6} color="#ffd9a8" />
+      <hemisphereLight args={['#ffe8cc', '#2a1a10', 0.5]} />
+      <Sun />
       <Environment resolution={256}>
-        <Lightformer form="rect" intensity={3} color="#ffb66b" position={[-6, 4, 6]} scale={[10, 6, 1]} />
-        <Lightformer form="rect" intensity={2} color="#ff6a3d" position={[6, 2, -6]} scale={[8, 4, 1]} />
-        <Lightformer form="ring" intensity={4} color="#fff0d0" position={[0, 8, 0]} scale={6} rotation-x={Math.PI / 2} />
+        <Lightformer form="rect" intensity={2.2} color="#ffffff" position={[-6, 5, 6]} scale={[10, 6, 1]} />
+        <Lightformer form="rect" intensity={1.4} color="#ffd9b0" position={[7, 3, -4]} scale={[8, 4, 1]} />
+        <Lightformer form="ring" intensity={2.5} color="#fff4e0" position={[0, 8, 0]} scale={7} rotation-x={Math.PI / 2} />
       </Environment>
 
-      {/* 1 · hero */}
+      {/* 1 · hero: a ring of everything we serve */}
       <Stage i={0}>
-        <Float speed={1.6} rotationIntensity={0.15} floatIntensity={0.6}>
-          <Spin speed={0.5}>
-            <Kulhad scale={1.15} position={[0, 0.1, 0]} />
-          </Spin>
-        </Float>
+        <Spin speed={0.22}>
+          {ring.map(([M, sc], n) => {
+            const a = (n / ring.length) * Math.PI * 2
+            return (
+              <group key={n} position={[Math.cos(a) * 1.75, FLOOR, Math.sin(a) * 1.75]} rotation-y={-a + Math.PI / 2}>
+                <M scale={sc * 0.55} />
+              </group>
+            )
+          })}
+        </Spin>
         <Lantern position={[-3.6, 3.4, -1]} length={5} phase={0} />
         <Lantern position={[3.8, 3.8, -2]} length={5} phase={2} color="#ffb347" />
       </Stage>
@@ -105,32 +142,26 @@ function World({ category }) {
       {/* 2 · story */}
       <Stage i={1}>
         <Spin speed={0.18}>
-          <Float speed={1.2} floatIntensity={0.5}>
-            <Kettle scale={1.2} position={[0, -0.75, 0]} />
-          </Float>
-          <Spices radius={2.6} />
+          <Kettle scale={1.2} position={[0, FLOOR, 0]} />
+          <Spices radius={2.4} />
         </Spin>
       </Stage>
 
       {/* 3 · menu: dish changes with the selected category */}
       <Stage i={2}>
-        <Float speed={1.5} floatIntensity={0.5} rotationIntensity={0.1}>
-          <Spin speed={0.45}>
-            <Pop key={category}>
-              <Dish scale={1.25} position={[0, 0.25, 0]} />
-            </Pop>
-          </Spin>
-        </Float>
+        <Spin speed={0.4}>
+          <Pop key={category}>
+            <Dish scale={scale} position={[0, FLOOR, 0]} />
+          </Pop>
+        </Spin>
       </Stage>
 
       {/* 4 · vibe */}
       <Stage i={3}>
         <Neon position={[0, 2.4, -1.5]} />
-        <Float speed={1.3} floatIntensity={0.5}>
-          <Spin speed={0.25}>
-            <Tray />
-          </Spin>
-        </Float>
+        <Spin speed={0.25}>
+          <Tray scale={0.9} position={[0, FLOOR, -0.4]} />
+        </Spin>
         <Lantern position={[-3.5, 3.2, 1]} length={6} phase={1} color="#ff5c8a" />
         <Lantern position={[3.5, 3.6, 0]} length={6} phase={3} color="#42e8ff" />
         <Lantern position={[0, 4.4, 2.5]} length={6} phase={5} color="#ffb347" />
@@ -139,23 +170,20 @@ function World({ category }) {
       {/* 5 · visit */}
       <Stage i={4}>
         <Spin speed={0.3}>
+          <Pizza scale={0.7} position={[0, FLOOR, 0]} />
           {[0, 1, 2, 3, 4].map((n) => {
             const a = (n / 5) * Math.PI * 2
-            return <Kulhad key={n} position={[Math.cos(a) * 2.4, 0.1 + Math.sin(n) * 0.1, Math.sin(a) * 2.4]} rotation={[0.15, -a, 0]} />
+            return <Kulhad key={n} scale={0.5} position={[Math.cos(a) * 2.05, FLOOR, Math.sin(a) * 2.05]} rotation={[0, -a, 0]} />
           })}
         </Spin>
-        <Float speed={1.5} floatIntensity={0.7}>
-          <Kulhad scale={1.1} position={[0, 0.9, 0]} />
-        </Float>
         <Lantern position={[-3, 3.4, 0]} length={5} phase={4} />
         <Lantern position={[3, 3.8, 0]} length={5} phase={6} color="#ffb347" />
       </Stage>
 
-      {/* floating dust / embers through the whole journey */}
-      <Sparkles count={260} scale={[40, 14, 90]} position={[0, 2, -32]} size={3} speed={0.35} color="#ffb454" opacity={0.7} />
+      <Sparkles count={180} scale={[40, 14, 90]} position={[0, 2, -32]} size={2.5} speed={0.3} color="#ffd9a0" opacity={0.5} />
       <mesh rotation-x={-Math.PI / 2} position={[0, -1.32, -32]}>
         <planeGeometry args={[160, 160]} />
-        <meshStandardMaterial color="#100905" roughness={0.9} />
+        <meshStandardMaterial color="#120c08" roughness={0.9} />
       </mesh>
     </>
   )
@@ -163,7 +191,7 @@ function World({ category }) {
 
 export default function Scene({ category }) {
   return (
-    <Canvas dpr={[1, 1.75]} camera={{ fov: 45, near: 0.1, far: 200, position: [0, 2.6, 11] }} gl={{ antialias: true, powerPreference: 'high-performance' }}>
+    <Canvas shadows dpr={[1, 1.75]} camera={{ fov: 45, near: 0.1, far: 200, position: [0, 2.6, 11] }} gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}>
       <Suspense fallback={null}>
         <Rig />
         <World category={category} />

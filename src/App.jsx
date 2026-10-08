@@ -131,11 +131,11 @@ export default function App() {
       <main>
         <section id="home" className="sec hero">
           <div className="col left">
-            <p className="kicker">Chai · Snacks · Late-night adda</p>
+            <p className="kicker">Chai · Pizza · Burgers · Pasta · Coffee</p>
             <h1>
               Chai <em>Sutta</em> Bar
             </h1>
-            <p className="lead">Sip the street. Slow-brewed chai in clay kulhads, hot snacks and a glow that lasts till the last cup.</p>
+            <p className="lead">From our first kulhad of chai to wood-fired pizza, juicy burgers, creamy pasta, cold coffee and midnight Maggi. Everything fresh, everything hot.</p>
             <div className="cta">
               <button className="btn primary" onClick={() => go('menu')}>
                 Explore the menu
@@ -155,22 +155,22 @@ export default function App() {
           <div className="col right">
             <Reveal>
               <p className="kicker">Our story</p>
-              <h2>One kettle. A thousand conversations.</h2>
+              <h2>One kettle. A whole kitchen.</h2>
             </Reveal>
             <Reveal delay={120}>
               <p className="lead">
-                We started with a single brass kettle and a simple idea: chai tastes better when it is brewed slowly, served in clay and shared with friends. Fresh milk, hand-crushed
-                ginger and cardamom, and tea leaves we blend ourselves.
+                We started with a single brass kettle and a simple idea: good food tastes better shared. Today the same kitchen that brews our chai also bakes pizza, grills burgers
+                and whips up cold coffee, all made fresh to order.
               </p>
             </Reveal>
             <Reveal delay={240} className="stats">
               <div>
-                <b>12+</b>
-                <span>Chai blends</span>
+                <b>60+</b>
+                <span>Dishes & drinks</span>
               </div>
               <div>
                 <b>100%</b>
-                <span>Clay kulhads</span>
+                <span>Fresh to order</span>
               </div>
               <div>
                 <b>3 AM</b>
@@ -184,7 +184,7 @@ export default function App() {
           <div className="col left wide">
             <Reveal>
               <p className="kicker">The menu</p>
-              <h2>Pick your poison. Watch it spin.</h2>
+              <h2>Pick a dish. Watch it spin.</h2>
             </Reveal>
             <div className="tabs" role="tablist">
               {CATEGORIES.map((c) => (
@@ -221,7 +221,7 @@ export default function App() {
             <div className="cards">
               {[
                 ['🎶', 'Live music nights', 'Acoustic sets and open mics every weekend.'],
-                ['🏺', 'The kulhad ritual', 'Every cup is fired clay – sip, then smash.'],
+                ['🍕', 'Made fresh, served hot', 'Pizza, burgers & pasta straight from the kitchen.'],
                 ['🌙', 'Open past midnight', 'The adda stays warm long after the city sleeps.'],
               ].map(([icon, t, d], i) => (
                 <Reveal key={t} delay={i * 120} className="card">
