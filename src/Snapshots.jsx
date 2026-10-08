@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import * as THREE from 'three'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
@@ -68,44 +68,50 @@ function Table() {
 function Studio() {
   const { gl, camera, invalidate } = useThree()
   const [job, setJob] = useState(null)
+  const jobRef = useRef(null) // job being shot right now (read inside the render loop)
+  const mounted = useRef(null) // job whose dish is actually in the scene
   const dish = useRef()
   const frames = useRef(0)
   const dof = useRef()
-  const focus = useMemo(() => new THREE.Vector3(), [])
 
   const next = () => {
     const k = queue.shift() || null
+    jobRef.current = k
     frames.current = 0
     setJob(k)
-    if (k) invalidate()
   }
+
+  useLayoutEffect(() => {
+    mounted.current = job
+    if (job) invalidate()
+  }, [job])
 
   useEffect(() => {
     wake = () => {
-      if (!job) next()
+      if (!jobRef.current) next()
     }
-    if (!job && queue.length) next()
+    wake()
     return () => {
       wake = () => {}
     }
-  }, [job])
+  }, [])
 
-  // runs after the effect composer (priority 1) so the canvas holds the finished frame
+  // priority 2: runs after the effect composer (priority 1), so the canvas holds the finished frame
   useFrame(() => {
-    if (!job || !dish.current) return
+    const key = jobRef.current
+    if (!key) return
+    if (mounted.current !== key || !dish.current) return invalidate()
     frames.current++
     if (frames.current === 1) {
       const sphere = new THREE.Box3().setFromObject(dish.current).getBoundingSphere(new THREE.Sphere())
-      const a = ANGLES[Number(job.split(':')[1]) % ANGLES.length]
+      const a = ANGLES[Number(key.split(':')[1]) % ANGLES.length]
       const dist = (sphere.radius / Math.sin(THREE.MathUtils.degToRad(camera.fov) / 2)) * a.zoom
       camera.position.set(sphere.center.x, sphere.center.y + Math.sin(a.elev) * dist, sphere.center.z + Math.cos(a.elev) * dist)
       camera.lookAt(sphere.center)
       camera.updateProjectionMatrix()
-      focus.copy(sphere.center)
-      if (dof.current?.target) dof.current.target.copy(focus)
+      if (dof.current?.target) dof.current.target.copy(sphere.center)
     }
     if (frames.current < 4) return invalidate()
-    const key = job
     gl.domElement.toBlob(
       (b) => {
         if (!b) return
