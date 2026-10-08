@@ -83,18 +83,52 @@ function Reveal({ children, className = '', delay = 0, as: Tag = 'div' }) {
   )
 }
 
+const BASE = import.meta.env.BASE_URL
+const slug = (t) => t.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+
+// Shows a real photo if the file exists in /public/images, otherwise renders nothing.
+function Photo({ src, alt, className, frame }) {
+  const [ok, setOk] = useState(true)
+  useEffect(() => setOk(true), [src])
+  if (!ok) return null
+  const img = <img className={className} src={src} alt={alt} decoding="async" onError={() => setOk(false)} />
+  return frame ? <figure className={frame}>{img}</figure> : img
+}
+
+function ThemeToggle({ theme, onToggle }) {
+  return (
+    <button className="theme-toggle" onClick={onToggle} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`} title="Toggle theme">
+      {theme === 'dark' ? (
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" /><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M5.2 18.8l1.6-1.6M17.2 6.8l1.6-1.6" /></svg>
+      ) : (
+        <svg viewBox="0 0 24 24"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z" /></svg>
+      )}
+    </button>
+  )
+}
+
 const go = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
 export default function App() {
   const active = useScrollStage()
   const [cat, setCat] = useState(CATEGORIES[0].id)
   const [open, setOpen] = useState(false)
+  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'dark')
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    document.documentElement.dataset.theme = next
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0d0907' : '#f4ece0')
+    try {
+      localStorage.setItem('theme', next)
+    } catch {}
+  }
   const current = CATEGORIES.find((c) => c.id === cat)
 
   return (
     <>
       <div className="canvas-wrap">
-        <Scene category={cat} />
+        <Scene category={cat} theme={theme} />
       </div>
       <div className="vignette" />
 
@@ -116,10 +150,13 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <button className="burger" onClick={() => setOpen(!open)} aria-label="Toggle menu">
-          <span />
-          <span />
-        </button>
+        <div className="nav-right">
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          <button className="burger" onClick={() => setOpen(!open)} aria-label="Toggle menu">
+            <span />
+            <span />
+          </button>
+        </div>
       </header>
 
       <div className="dots" aria-hidden>
@@ -193,10 +230,12 @@ export default function App() {
                 </button>
               ))}
             </div>
+            <Photo frame="cat-photo" src={`${BASE}images/${cat}.jpg`} alt={current.label} />
             <p className="blurb">{current.blurb}</p>
             <ul className="items" key={cat}>
               {current.items.map((it, i) => (
                 <li key={it.name} style={{ animationDelay: `${i * 60}ms` }}>
+                  <Photo className="thumb" src={`${BASE}images/items/${slug(it.name)}.jpg`} alt={it.name} />
                   <span className={`veg ${it.nonveg ? 'non' : ''}`} title={it.nonveg ? 'Non-veg' : 'Veg'} />
                   <div className="info">
                     <h3>

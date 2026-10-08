@@ -4,6 +4,7 @@ import { Vector3 } from 'three'
 export const store = {
   stage: 0, // fractional section index driven by scroll
   focus: new Vector3(), // world point the camera is looking at (for the shadow light)
+  themeT: 0, // 0 = dark theme, 1 = light theme (damped)
   vel: 0, // smoothed scroll velocity, spins the 3D objects
 }
 

@@ -2,6 +2,9 @@ import React, { Suspense, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer, Sparkles } from '@react-three/drei'
+import { EffectComposer, Bloom, DepthOfField, ToneMapping, Vignette, SMAA } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
+import { withRealModel } from './RealModel.jsx'
 import { STAGES, store } from './store.js'
 import { Kulhad, Samosa, MaggiBowl, Burger, GulabJamun, Pizza, Pasta, Sandwich, ColdCoffee, Drinks, Kettle, Spices, Lantern, Neon, Platform, Tray, Pop, Shadowed } from './models.jsx'
 
@@ -54,6 +57,30 @@ function Rig() {
   return null
 }
 
+const DARK = { bg: new THREE.Color('#0d0907'), floor: new THREE.Color('#120c08') }
+const LIGHT = { bg: new THREE.Color('#f4ece0'), floor: new THREE.Color('#e6d8c4') }
+
+// Smoothly cross-fades background, fog, exposure and lights between the two themes.
+function ThemeRig({ theme, lights }) {
+  const { scene, gl } = useThree()
+  const tmp = useMemo(() => new THREE.Color(), [])
+  useFrame((_, dt) => {
+    store.themeT = THREE.MathUtils.damp(store.themeT, theme === 'light' ? 1 : 0, 4, dt)
+    const t = store.themeT
+    tmp.lerpColors(DARK.bg, LIGHT.bg, t)
+    scene.background.copy(tmp)
+    scene.fog.color.copy(tmp)
+    scene.fog.near = THREE.MathUtils.lerp(16, 22, t)
+    scene.fog.far = THREE.MathUtils.lerp(42, 52, t)
+    gl.toneMappingExposure = THREE.MathUtils.lerp(1.05, 1.2, t)
+    lights.current.ambient.intensity = THREE.MathUtils.lerp(0.35, 0.7, t)
+    lights.current.hemi.intensity = THREE.MathUtils.lerp(0.5, 0.9, t)
+    lights.current.floor.material.color.lerpColors(DARK.floor, LIGHT.floor, t)
+    lights.current.sparkles.visible = t < 0.5
+  })
+  return null
+}
+
 // Single shadow-casting light that follows whichever stage the camera is on.
 function Sun() {
   const ref = useRef()
@@ -85,16 +112,16 @@ function Spin({ children, speed = 0.4, ...props }) {
 
 // scale fits each dish to the platform; every model has its base at y = 0
 export const DISHES = {
-  chai: [Kulhad, 1.25],
-  pizza: [Pizza, 1.1],
-  burgers: [Burger, 1.15],
-  pasta: [Pasta, 1.15],
-  sandwich: [Sandwich, 0.95],
-  maggi: [MaggiBowl, 1.05],
-  coffee: [ColdCoffee, 0.95],
-  drinks: [Drinks, 0.88],
-  snacks: [Samosa, 0.9],
-  sweets: [GulabJamun, 1.2],
+  chai: [withRealModel('chai', Kulhad), 1.25],
+  pizza: [withRealModel('pizza', Pizza), 1.1],
+  burgers: [withRealModel('burgers', Burger), 1.15],
+  pasta: [withRealModel('pasta', Pasta), 1.15],
+  sandwich: [withRealModel('sandwich', Sandwich), 0.95],
+  maggi: [withRealModel('maggi', MaggiBowl), 1.05],
+  coffee: [withRealModel('coffee', ColdCoffee), 0.95],
+  drinks: [withRealModel('drinks', Drinks), 0.88],
+  snacks: [withRealModel('snacks', Samosa), 0.9],
+  sweets: [withRealModel('sweets', GulabJamun), 1.2],
 }
 const FLOOR = -1.0
 
@@ -107,15 +134,17 @@ function Stage({ i, children }) {
   )
 }
 
-function World({ category }) {
+function World({ category, theme }) {
   const [Dish, scale] = DISHES[category] || DISHES.chai
+  const lights = useRef({})
   const ring = [DISHES.chai, DISHES.pizza, DISHES.coffee, DISHES.pasta, DISHES.burgers]
   return (
     <>
-      <color attach="background" args={['#0d0907']} />
-      <fog attach="fog" args={['#0d0907', 16, 42]} />
-      <ambientLight intensity={0.35} />
-      <hemisphereLight args={['#ffe8cc', '#2a1a10', 0.5]} />
+      <color attach="background" args={[theme === 'light' ? '#f4ece0' : '#0d0907']} />
+      <fog attach="fog" args={[theme === 'light' ? '#f4ece0' : '#0d0907', 16, 42]} />
+      <ThemeRig theme={theme} lights={lights} />
+      <ambientLight ref={(el) => (lights.current.ambient = el)} intensity={0.35} />
+      <hemisphereLight ref={(el) => (lights.current.hemi = el)} args={['#ffe8cc', '#2a1a10', 0.5]} />
       <Sun />
       <Environment resolution={256}>
         <Lightformer form="rect" intensity={2.2} color="#ffffff" position={[-6, 5, 6]} scale={[10, 6, 1]} />
@@ -180,8 +209,10 @@ function World({ category }) {
         <Lantern position={[3, 3.8, 0]} length={5} phase={6} color="#ffb347" />
       </Stage>
 
-      <Sparkles count={180} scale={[40, 14, 90]} position={[0, 2, -32]} size={2.5} speed={0.3} color="#ffd9a0" opacity={0.5} />
-      <mesh rotation-x={-Math.PI / 2} position={[0, -1.32, -32]}>
+      <group ref={(el) => (lights.current.sparkles = el)}>
+        <Sparkles count={180} scale={[40, 14, 90]} position={[0, 2, -32]} size={2.5} speed={0.3} color="#ffd9a0" opacity={0.5} />
+      </group>
+      <mesh ref={(el) => (lights.current.floor = el)} rotation-x={-Math.PI / 2} position={[0, -1.32, -32]}>
         <planeGeometry args={[160, 160]} />
         <meshStandardMaterial color="#120c08" roughness={0.9} />
       </mesh>
@@ -189,12 +220,37 @@ function World({ category }) {
   )
 }
 
-export default function Scene({ category }) {
+// Film-style finishing: glow on lanterns/neon, background blur around the dish, tone mapping.
+function Effects({ theme }) {
+  const dof = useRef()
+  useFrame(() => {
+    if (dof.current?.target) dof.current.target.set(store.focus.x, -0.3, store.focus.z)
+  })
   return (
-    <Canvas shadows dpr={[1, 1.75]} camera={{ fov: 45, near: 0.1, far: 200, position: [0, 2.6, 11] }} gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}>
+    <EffectComposer multisampling={0} disableNormalPass>
+      <Bloom mipmapBlur intensity={theme === 'light' ? 0.25 : 0.7} luminanceThreshold={1} luminanceSmoothing={0.15} />
+      <DepthOfField ref={dof} target={[0, 0, 0]} focusRange={0.03} focalLength={0.05} bokehScale={2.4} height={480} />
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      <Vignette eskil={false} offset={0.25} darkness={theme === 'light' ? 0.25 : 0.6} />
+      <SMAA />
+    </EffectComposer>
+  )
+}
+
+const lowPower = typeof window !== 'undefined' && (window.matchMedia('(max-width: 800px)').matches || window.matchMedia('(pointer: coarse)').matches)
+
+export default function Scene({ category, theme }) {
+  return (
+    <Canvas
+      shadows
+      dpr={[1, lowPower ? 1.5 : 1.75]}
+      camera={{ fov: 45, near: 0.1, far: 200, position: [0, 2.8, 9.5] }}
+      gl={{ antialias: lowPower, powerPreference: 'high-performance', toneMapping: lowPower ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping, toneMappingExposure: 1.05 }}
+    >
       <Suspense fallback={null}>
         <Rig />
-        <World category={category} />
+        <World category={category} theme={theme} />
+        {!lowPower && <Effects theme={theme} />}
       </Suspense>
     </Canvas>
   )

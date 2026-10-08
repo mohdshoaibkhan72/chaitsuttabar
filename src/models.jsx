@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
+import { store } from './store.js'
 import { breadTex, crustTex, meatTex, terracottaTex, crispTex, woodTex, toastTex, pizzaTopTex, limeTex, coffeeTex, jitter, nestGeometry, rng } from './textures.js'
 
 const TAU = Math.PI * 2
@@ -10,7 +11,7 @@ const lerp = THREE.MathUtils.lerp
 
 /* ---------- helpers ---------- */
 
-function enableShadows(root) {
+export function enableShadows(root) {
   root.traverse((o) => {
     if (!o.isMesh) return
     const m = o.material
@@ -740,12 +741,17 @@ export function Neon({ color = '#ff3d81', ...props }) {
   )
 }
 
+const PLAT_DARK = new THREE.Color('#d8cfc2')
+const PLAT_LIGHT = new THREE.Color('#3a2c22')
+
 export function Platform({ radius = 2.7, color = '#f5a623' }) {
+  const mat = useRef()
+  useFrame(() => mat.current.color.lerpColors(PLAT_DARK, PLAT_LIGHT, store.themeT))
   return (
     <group position={[0, -1.15, 0]}>
       <mesh receiveShadow>
         <cylinderGeometry args={[radius, radius + 0.15, 0.3, 80]} />
-        <meshPhysicalMaterial color="#d8cfc2" roughness={0.45} metalness={0.05} clearcoat={0.3} />
+        <meshPhysicalMaterial ref={mat} color="#d8cfc2" roughness={0.45} metalness={0.05} clearcoat={0.3} />
       </mesh>
       <mesh position={[0, 0.151, 0]} rotation-x={-Math.PI / 2}>
         <ringGeometry args={[radius - 0.12, radius - 0.07, 96]} />
