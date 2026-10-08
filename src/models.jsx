@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
 import { store } from './store.js'
-import { breadTex, crustTex, meatTex, terracottaTex, crispTex, woodTex, toastTex, pizzaTopTex, limeTex, coffeeTex, jitter, nestGeometry, rng } from './textures.js'
+import { teaTex, breadTex, crustTex, meatTex, terracottaTex, crispTex, woodTex, toastTex, pizzaTopTex, limeTex, coffeeTex, jitter, nestGeometry, rng } from './textures.js'
 
 const TAU = Math.PI * 2
 const lathe = (pts, seg = 64) => new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), seg)
@@ -160,13 +160,9 @@ export function Kulhad(props) {
         <mesh geometry={geo}>
           <meshStandardMaterial map={t} bumpMap={t} bumpScale={1.5} roughness={0.88} side={THREE.DoubleSide} />
         </mesh>
-        <mesh position={[0, 1.04, 0]}>
-          <cylinderGeometry args={[0.64, 0.64, 0.02, 48]} />
-          <meshPhysicalMaterial color="#b9783a" roughness={0.12} clearcoat={1} />
-        </mesh>
-        <mesh position={[0, 1.055, 0]} rotation-x={-Math.PI / 2}>
-          <ringGeometry args={[0.4, 0.62, 40]} />
-          <meshBasicMaterial color="#e8c9a0" transparent opacity={0.35} depthWrite={false} />
+        <mesh position={[0, 1.04, 0]} rotation-x={-Math.PI / 2}>
+          <circleGeometry args={[0.65, 48]} />
+          <meshPhysicalMaterial map={teaTex()} roughness={0.15} clearcoat={1} clearcoatRoughness={0.05} />
         </mesh>
         <Steam position={[0, 1.1, 0]} />
       </group>

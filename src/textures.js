@@ -170,6 +170,28 @@ export const limeTex = (rind, flesh, pith) =>
     }
   })
 
+export const teaTex = () =>
+  tex('tea', 256, 256, (g, w, h, r) => {
+    const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2)
+    gr.addColorStop(0, '#c99560')
+    gr.addColorStop(0.7, '#b07a44')
+    gr.addColorStop(0.93, '#d8b48a')
+    gr.addColorStop(1, '#8a5a30')
+    g.fillStyle = gr
+    g.fillRect(0, 0, w, h)
+    // a little froth collecting near the rim
+    for (let i = 0; i < 160; i++) {
+      const a = r() * 6.283
+      const d = (0.72 + r() * 0.22) * (w / 2)
+      g.globalAlpha = 0.25 + r() * 0.3
+      g.fillStyle = '#efd9bb'
+      g.beginPath()
+      g.arc(w / 2 + Math.cos(a) * d, h / 2 + Math.sin(a) * d, 1 + r() * 3, 0, 7)
+      g.fill()
+    }
+    g.globalAlpha = 1
+  })
+
 export const coffeeTex = () =>
   tex('coffee', 8, 256, (g, w, h) => {
     const gr = g.createLinearGradient(0, 0, 0, h)

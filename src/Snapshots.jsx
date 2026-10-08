@@ -21,12 +21,14 @@ export const SHOTS_PER_CATEGORY = 6
 const shots = new Map()
 const subs = new Set()
 let queue = []
+let current = null // key being shot right now
 let wake = () => {}
 
+// Urgent requests (the open tab) jump the queue; background ones only append what's missing.
 export function requestShots(cat, urgent = false) {
-  const keys = Array.from({ length: SHOTS_PER_CATEGORY }, (_, i) => `${cat}:${i}`).filter((k) => !shots.has(k))
-  queue = queue.filter((k) => !keys.includes(k))
-  queue = urgent ? [...keys, ...queue] : [...queue, ...keys]
+  const keys = Array.from({ length: SHOTS_PER_CATEGORY }, (_, i) => `${cat}:${i}`).filter((k) => !shots.has(k) && k !== current)
+  if (urgent) queue = [...keys, ...queue.filter((k) => !keys.includes(k))]
+  else queue = [...queue, ...keys.filter((k) => !queue.includes(k))]
   wake()
 }
 
@@ -42,12 +44,12 @@ export function useShot(key) {
 
 // angle / zoom per shot so the six cards of a category don't look identical
 const ANGLES = [
-  { elev: 0.82, turn: 0.0, zoom: 1.0 },
-  { elev: 0.68, turn: 1.1, zoom: 0.82 },
-  { elev: 0.95, turn: 2.2, zoom: 0.95 },
-  { elev: 0.72, turn: 3.3, zoom: 0.88 },
-  { elev: 0.88, turn: 4.3, zoom: 0.78 },
-  { elev: 0.66, turn: 5.3, zoom: 0.92 },
+  { elev: 0.78, turn: 0.0, zoom: 0.72 },
+  { elev: 0.62, turn: 1.1, zoom: 0.6 },
+  { elev: 0.92, turn: 2.2, zoom: 0.7 },
+  { elev: 0.68, turn: 3.3, zoom: 0.64 },
+  { elev: 0.85, turn: 4.3, zoom: 0.58 },
+  { elev: 0.6, turn: 5.3, zoom: 0.68 },
 ]
 
 function Table() {
@@ -60,7 +62,7 @@ function Table() {
   return (
     <mesh rotation-x={-Math.PI / 2} receiveShadow>
       <planeGeometry args={[40, 40]} />
-      <meshStandardMaterial map={map} color="#8a6446" roughness={0.72} />
+      <meshStandardMaterial map={map} color="#7a5a42" roughness={0.75} />
     </mesh>
   )
 }
@@ -75,7 +77,9 @@ function Studio() {
   const dof = useRef()
 
   const next = () => {
-    const k = queue.shift() || null
+    let k = queue.shift() || null
+    while (k && shots.has(k)) k = queue.shift() || null
+    current = k
     jobRef.current = k
     frames.current = 0
     setJob(k)
@@ -122,6 +126,7 @@ function Studio() {
       0.86
     )
     next()
+    invalidate()
   }, 2)
 
   const [cat, idx] = job ? job.split(':') : []
