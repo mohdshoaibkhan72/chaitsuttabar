@@ -120,7 +120,7 @@ function Tumbler({ h = 2, rt = 0.62, rb = 0.5, level = 0.78, liquid = {}, childr
             <meshPhysicalMaterial attach="material-2" color="#2c160b" />
           </>
         ) : (
-          <meshPhysicalMaterial color={color} transparent={opacity < 1} opacity={opacity} roughness={0.08} clearcoat={1} emissive={emissive || '#000'} emissiveIntensity={0.25} />
+          <meshPhysicalMaterial color={color} roughness={0.08} clearcoat={1} emissive={emissive || '#000'} emissiveIntensity={0.35} />
         )}
       </mesh>
       {ice && cubes.map((c, i) => <Ice key={i} position={c.p} rotation={c.rot} />)}
@@ -186,7 +186,7 @@ export function GlassChai(props) {
         <Ceramic />
       </mesh>
       <group position={[0, 0.06, 0]}>
-        <Tumbler h={1.1} rt={0.5} rb={0.38} level={0.82} ice={false} liquid={{ color: '#b9702f', opacity: 0.95 }} />
+        <Tumbler h={1.1} rt={0.5} rb={0.38} level={0.82} ice={false} liquid={{ color: '#b9702f' }} />
         <Steam position={[0, 1.0, 0]} count={5} height={1.2} />
       </group>
     </group>
@@ -408,7 +408,7 @@ export function Pasta(props) {
         <Ceramic side={THREE.DoubleSide} />
       </mesh>
       <mesh geometry={noodles} position={[0, 0.12, 0]}>
-        <meshPhysicalMaterial color="#f6dc8c" roughness={0.38} clearcoat={0.5} emissive="#6b4a10" emissiveIntensity={0.25} />
+        <meshPhysicalMaterial color="#f6dc8c" roughness={0.38} clearcoat={0.5} emissive="#6b4a10" emissiveIntensity={0.35} />
       </mesh>
       <mesh geometry={sauce} position={[0, 0.5, 0]}>
         <meshPhysicalMaterial color="#b5271a" roughness={0.25} clearcoat={1} />
@@ -616,7 +616,7 @@ export function Drinks(props) {
       </mesh>
       {/* mojito */}
       <group position={[0.8, 0.06, 0.1]}>
-        <Tumbler h={H} rt={0.58} rb={0.46} level={0.82} liquid={{ color: '#9fe07a', opacity: 0.75, emissive: '#4fb040' }}>
+        <Tumbler h={H} rt={0.58} rb={0.46} level={0.82} liquid={{ color: '#7fd45a', emissive: '#4fb040' }}>
           {mint.map(([x, y, z, r], i) => (
             <Leaf key={i} position={[x, H * 0.84 + y, z]} rotation={[0.3, r, 0.35]} scale={2.1} color="#2f9a3a" />
           ))}
@@ -629,7 +629,7 @@ export function Drinks(props) {
       </group>
       {/* cola */}
       <group position={[-0.8, 0.06, -0.1]}>
-        <Tumbler h={H} rt={0.58} rb={0.46} level={0.82} liquid={{ color: '#2a0f08', opacity: 0.96 }}>
+        <Tumbler h={H} rt={0.58} rb={0.46} level={0.82} liquid={{ color: '#2a0f08' }}>
           <mesh position={[-0.05, H - 0.03, 0.55]} rotation={[Math.PI / 2 - 0.15, 0, 0]}>
             <circleGeometry args={[0.4, 40]} />
             <meshStandardMaterial map={lemon} side={THREE.DoubleSide} roughness={0.3} />
