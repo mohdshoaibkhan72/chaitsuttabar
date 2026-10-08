@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Scene from './Scene.jsx'
 import { store } from './store.js'
-import { CATEGORIES } from './menuData.js'
+import { CATEGORIES, COMBOS } from './menuData.js'
+import { AddButton, CartButton, CartDrawer } from './features/Cart.jsx'
 import { SnapshotStudio, requestShots, useShot, SHOTS_PER_CATEGORY } from './Snapshots.jsx'
 
 const NAV = [
@@ -125,6 +126,51 @@ function DishImage({ cat, index, name }) {
   )
 }
 
+function MenuCard({ it, cat, index, delay = 0 }) {
+  const media = useRef()
+  return (
+    <article className="mcard" style={{ animationDelay: `${delay}ms` }}>
+      <div className="mcard-media" ref={media}>
+        <DishImage cat={cat} index={index} name={it.name} />
+        {it.best && <span className="ribbon">★ Bestseller</span>}
+        <span className={`veg ${it.nonveg ? 'non' : ''}`} title={it.nonveg ? 'Non-veg' : 'Veg'} />
+      </div>
+      <div className="mcard-body">
+        <h3>{it.name}</h3>
+        <p>{it.desc}</p>
+        <div className="mcard-foot">
+          <span className="price">₹{it.price}</span>
+          <AddButton item={it} cat={cat} index={index} sourceRef={media} />
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function ComboCard({ combo, delay }) {
+  const media = useRef()
+  const [cat, index] = combo.shot
+  return (
+    <article className="mcard combo" style={{ animationDelay: `${delay}ms` }}>
+      <div className="mcard-media" ref={media}>
+        <DishImage cat={cat} index={index} name={combo.id} />
+        <span className="ribbon">{combo.tag}</span>
+        <span className="save">Save ₹{combo.was - combo.price}</span>
+      </div>
+      <div className="mcard-body">
+        <h3>{combo.name}</h3>
+        <p>{combo.desc}</p>
+        <div className="mcard-foot">
+          <span className="price">
+            ₹{combo.price} <s>₹{combo.was}</s>
+          </span>
+          <AddButton item={combo} cat={cat} index={index} sourceRef={media} />
+        </div>
+      </div>
+    </article>
+  )
+}
+
 function ThemeToggle({ theme, onToggle }) {
   return (
     <button className="theme-toggle" onClick={onToggle} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`} title="Toggle theme">
@@ -188,6 +234,7 @@ export default function App() {
           ))}
         </nav>
         <div className="nav-right">
+          <CartButton />
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <button className="burger" onClick={() => setOpen(!open)} aria-label="Toggle menu">
             <span />
@@ -271,22 +318,19 @@ export default function App() {
             <p className="blurb">{current.blurb}</p>
             <div className="menu-grid" key={cat}>
               {current.items.map((it, i) => (
-                <article className="mcard" key={it.name} style={{ animationDelay: `${i * 70}ms` }}>
-                  <div className="mcard-media">
-                    <DishImage cat={cat} index={i} name={it.name} />
-                    {it.best && <span className="ribbon">★ Bestseller</span>}
-                    <span className={`veg ${it.nonveg ? 'non' : ''}`} title={it.nonveg ? 'Non-veg' : 'Veg'} />
-                  </div>
-                  <div className="mcard-body">
-                    <h3>{it.name}</h3>
-                    <p>{it.desc}</p>
-                    <div className="mcard-foot">
-                      <span className="price">₹{it.price}</span>
-                      <span className="diet">{it.nonveg ? 'Non-veg' : 'Veg'}</span>
-                    </div>
-                  </div>
-                </article>
+                <MenuCard key={it.name} it={it} cat={cat} index={i} delay={i * 70} />
               ))}
+            </div>
+            <div className="combos">
+              <Reveal>
+                <p className="kicker">Combos & deals</p>
+                <h3 className="combos-title">Better together.</h3>
+              </Reveal>
+              <div className="menu-grid">
+                {COMBOS.map((c, i) => (
+                  <ComboCard key={c.id} combo={c} delay={i * 70} />
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -345,6 +389,7 @@ export default function App() {
           </div>
         </section>
       </main>
+      <CartDrawer onBrowse={() => go('menu')} />
     </>
   )
 }

@@ -165,3 +165,10 @@ footer { margin-top: 56px; font-size: 0.78rem; color: var(--muted); opacity: 0.7
 .shimmer { position: absolute; inset: 0; background: linear-gradient(100deg, #1f150e 30%, #33241a 50%, #1f150e 70%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .mcard { animation: none; } .shimmer { animation: none; } }
+
+/* combos */
+.combos { margin-top: 56px; }
+.combos-title { font-family: var(--serif); font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; letter-spacing: -0.01em; margin-bottom: 18px; text-shadow: 0 4px 30px var(--shadow); }
+.mcard .save { position: absolute; z-index: 1; left: 12px; bottom: 12px; padding: 4px 10px; border-radius: 99px; background: rgba(20, 120, 60, 0.92); color: #fff; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; }
+.mcard .price s { font-family: var(--sans); font-size: 0.8rem; font-weight: 400; color: var(--muted); margin-left: 4px; }
+.mcard-foot { gap: 10px; }
