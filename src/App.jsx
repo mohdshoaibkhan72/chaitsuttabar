@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import Scene from './Scene.jsx'
 import { store } from './store.js'
 import { CATEGORIES } from './menuData.js'
+import { SnapshotStudio, requestShots, useShot, SHOTS_PER_CATEGORY } from './Snapshots.jsx'
 
 const NAV = [
   ['home', 'Home'],
@@ -95,6 +96,35 @@ function Photo({ src, alt, className, frame }) {
   return frame ? <figure className={frame}>{img}</figure> : img
 }
 
+// Card image: the real photo if one exists, otherwise a studio render of the 3D dish.
+function DishImage({ cat, index, name }) {
+  const photo = `${BASE}images/items/${slug(name)}.jpg`
+  const [state, setState] = useState('photo') // photo -> render when the file is missing
+  const [loaded, setLoaded] = useState(false)
+  const shot = useShot(`${cat}:${index % SHOTS_PER_CATEGORY}`)
+  useEffect(() => {
+    setState('photo')
+    setLoaded(false)
+  }, [photo])
+  const src = state === 'photo' ? photo : shot
+  return (
+    <>
+      {!loaded && <div className="shimmer" />}
+      {src && (
+        <img
+          key={src}
+          src={src}
+          alt={name}
+          decoding="async"
+          className={loaded ? 'in' : ''}
+          onLoad={() => setLoaded(true)}
+          onError={() => state === 'photo' && setState('render')}
+        />
+      )}
+    </>
+  )
+}
+
 function ThemeToggle({ theme, onToggle }) {
   return (
     <button className="theme-toggle" onClick={onToggle} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`} title="Toggle theme">
@@ -125,11 +155,18 @@ export default function App() {
   }
   const current = CATEGORIES.find((c) => c.id === cat)
 
+  useEffect(() => requestShots(cat, true), [cat])
+  useEffect(() => {
+    const t = setTimeout(() => CATEGORIES.forEach((c) => requestShots(c.id)), 4000)
+    return () => clearTimeout(t)
+  }, [])
+
   return (
     <>
       <div className="canvas-wrap">
         <Scene category={cat} theme={theme} />
       </div>
+      <SnapshotStudio />
       <div className="vignette" />
 
       <header className="nav">
@@ -232,22 +269,25 @@ export default function App() {
             </div>
             <Photo frame="cat-photo" src={`${BASE}images/${cat}.jpg`} alt={current.label} />
             <p className="blurb">{current.blurb}</p>
-            <ul className="items" key={cat}>
+            <div className="menu-grid" key={cat}>
               {current.items.map((it, i) => (
-                <li key={it.name} style={{ animationDelay: `${i * 60}ms` }}>
-                  <Photo className="thumb" src={`${BASE}images/items/${slug(it.name)}.jpg`} alt={it.name} />
-                  <span className={`veg ${it.nonveg ? 'non' : ''}`} title={it.nonveg ? 'Non-veg' : 'Veg'} />
-                  <div className="info">
-                    <h3>
-                      {it.name}
-                      {it.best && <em>Bestseller</em>}
-                    </h3>
-                    <p>{it.desc}</p>
+                <article className="mcard" key={it.name} style={{ animationDelay: `${i * 70}ms` }}>
+                  <div className="mcard-media">
+                    <DishImage cat={cat} index={i} name={it.name} />
+                    {it.best && <span className="ribbon">★ Bestseller</span>}
+                    <span className={`veg ${it.nonveg ? 'non' : ''}`} title={it.nonveg ? 'Non-veg' : 'Veg'} />
                   </div>
-                  <span className="price">₹{it.price}</span>
-                </li>
+                  <div className="mcard-body">
+                    <h3>{it.name}</h3>
+                    <p>{it.desc}</p>
+                    <div className="mcard-foot">
+                      <span className="price">₹{it.price}</span>
+                      <span className="diet">{it.nonveg ? 'Non-veg' : 'Veg'}</span>
+                    </div>
+                  </div>
+                </article>
               ))}
-            </ul>
+            </div>
           </div>
         </section>
 

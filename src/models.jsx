@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useMemo, useRef } from 'react'
+import React, { createContext, useContext, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
@@ -46,8 +46,12 @@ export function Pop({ children, speed = 5 }) {
   )
 }
 
+// True inside the photo studio, where animated effects like steam would freeze into blobs.
+export const StillContext = createContext(false)
+
 // Soft rising steam.
 export function Steam({ position = [0, 0, 0], count = 7, height = 1.6, spread = 0.25, opacity = 0.13 }) {
+  const still = useContext(StillContext)
   const refs = useRef([])
   const seeds = useMemo(() => Array.from({ length: count }, (_, i) => ({ off: i / count, ph: i * 2.1 })), [count])
   useFrame(({ clock }) => {
@@ -61,6 +65,7 @@ export function Steam({ position = [0, 0, 0], count = 7, height = 1.6, spread = 
       m.material.opacity = Math.sin(p * Math.PI) * opacity
     })
   })
+  if (still) return null
   return (
     <group position={position}>
       {seeds.map((_, i) => (
