@@ -60,8 +60,9 @@ function score(it, words) {
 }
 
 const best = (it) => (it.best ? 1 : 0)
+// popular: bestsellers first, then (when searching) name matches before description matches, then menu order
 const ORDER = {
-  popular: (a, b) => b.s - a.s || best(b.it) - best(a.it) || a.i - b.i,
+  popular: (a, b) => best(b.it) - best(a.it) || b.s - a.s || a.i - b.i,
   'price-asc': (a, b) => a.it.price - b.it.price || a.i - b.i,
   'price-desc': (a, b) => b.it.price - a.it.price || a.i - b.i,
 }
@@ -76,8 +77,9 @@ export function useMenuFilter(categories, activeCat) {
   const items = useMemo(() => {
     let list
     if (searching) {
+      // a query of only punctuation has nothing to match on
       const words = terms ? terms.split(' ') : []
-      list = categories.flatMap(dishesOf).map((it) => ({ it, s: score(it, words) })).filter((r) => r.s >= 0)
+      list = words.length ? categories.flatMap(dishesOf).map((it) => ({ it, s: score(it, words) })).filter((r) => r.s >= 0) : []
     } else {
       const c = categories.find((x) => x.id === activeCat) || categories[0]
       list = c ? dishesOf(c).map((it) => ({ it, s: 0 })) : []

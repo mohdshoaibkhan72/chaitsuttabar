@@ -239,7 +239,19 @@ function Effects({ theme }) {
 
 const lowPower = typeof window !== 'undefined' && (window.matchMedia('(max-width: 800px)').matches || window.matchMedia('(pointer: coarse)').matches)
 
-export default function Scene({ category, theme }) {
+// Tells the page the scene has actually drawn a few frames (used to lift the preloader).
+function ReadySignal({ onReady }) {
+  const frames = useRef(0)
+  const cb = useRef(onReady)
+  cb.current = onReady
+  useFrame(() => {
+    if (frames.current > 3) return
+    if (++frames.current === 3) cb.current?.()
+  })
+  return null
+}
+
+export default function Scene({ category, theme, onReady }) {
   return (
     <Canvas
       shadows
@@ -251,6 +263,7 @@ export default function Scene({ category, theme }) {
         <Rig />
         <World category={category} theme={theme} />
         {!lowPower && <Effects theme={theme} />}
+        <ReadySignal onReady={onReady} />
       </Suspense>
     </Canvas>
   )

@@ -8,6 +8,9 @@ const SORTS = [
 const IDEAS = ['paneer', 'cold coffee', 'maggi']
 
 const isTyping = (el) => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))
+// closed dialogs (like the cart drawer) stay in the DOM, so only count ones actually on screen
+const modalOpen = () =>
+  [...document.querySelectorAll('[aria-modal="true"]')].some((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden')
 const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 export function MenuTools({ filter, resultCount }) {
@@ -20,7 +23,7 @@ export function MenuTools({ filter, resultCount }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return
-      if (isTyping(document.activeElement) || document.querySelector('[aria-modal="true"]')) return
+      if (isTyping(document.activeElement) || modalOpen()) return
       const el = input.current
       if (!el) return
       e.preventDefault()
@@ -41,6 +44,7 @@ export function MenuTools({ filter, resultCount }) {
   const onKeyDown = (e) => {
     if (e.key === 'Escape' && query) {
       e.preventDefault()
+      e.stopPropagation()
       setQuery('')
     } else if (e.key === 'Enter' && window.matchMedia?.('(pointer: coarse)').matches) {
       e.currentTarget.blur() // drops the on-screen keyboard so the results are visible

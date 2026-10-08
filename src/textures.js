@@ -397,6 +397,44 @@ export const toastTex = () =>
     blobs(g, r, 900, w, h, ['#8a5420', '#f2d49a'], 0.6, 1.8, 0.4)
   })
 
+// Cut face of soft white bread: pale crumb with irregular air pockets (multiplied by vertex colour).
+export const crumbTex = () =>
+  tex('crumb', 256, 256, (g, w, h, r) => {
+    paint(g, w, h, (u, v, c) => {
+      const n = noise(u * 1024 + 5, v * 1024 + 60) * 0.6 + noise(u * 2048, v * 2048 + 31) * 0.4
+      c[0] = c[1] = c[2] = 222 + n * 33
+    })
+    for (let i = 0; i < 1100; i++) {
+      g.save()
+      g.translate(r() * w, r() * h)
+      g.rotate(r() * TAU)
+      const rx = 0.5 + r() ** 3 * 3.2
+      g.globalAlpha = 0.18 + r() * 0.22
+      g.fillStyle = '#8c7458'
+      g.beginPath()
+      g.ellipse(0, 0, rx, rx * (0.4 + r() * 0.5), 0, 0, 7)
+      g.fill()
+      g.restore()
+    }
+    g.globalAlpha = 1
+  })
+
+// Masala chai seen through a cutting-chai glass: a pale froth line over milky tea that deepens downwards.
+export const chaiTex = () =>
+  tex('chai', 128, 512, (g, w, h, r) => {
+    const froth = hex('#e4c9a2')
+    const light = hex('#b07a46')
+    const deep = hex('#7e4c27')
+    paint(g, w, h, (u, v, c) => {
+      const n = noise(u * 128 + 40, v * 512)
+      const t = v + (n - 0.5) * 0.03
+      if (t < 0.05) mix(c, froth, light, sstep(0.025, 0.05, t))
+      else mix(c, light, deep, sstep(0.05, 1, t))
+      mul(c, 0.95 + (noise(u * 512, v * 256 + 9) - 0.5) * 0.1)
+    })
+    blobs(g, r, 120, w, h * 0.04, ['#f4e2c6'], 0.6, 1.6, 0.6)
+  })
+
 // Margherita-style top, mapped onto a disc. The same fields drive colour and bump.
 function pizzaField(u, v, out) {
   const x = u * 2 - 1

@@ -4,7 +4,6 @@ import * as THREE from 'three'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei'
 import { DISHES } from '../Scene.jsx'
-import { Shadowed } from '../models.jsx'
 import { woodTex } from '../textures.js'
 import { useShot, requestShots, SHOTS_PER_CATEGORY } from '../Snapshots.jsx'
 
@@ -15,24 +14,24 @@ const CLOSE_MS = 260
 
 /* ---------- page scroll lock ---------- */
 
+// Classes rather than inline styles: the cart drawer saves and restores body.style itself,
+// so it could otherwise capture our lock and put it back after we have let go.
 let locks = 0
 let saved = null
 
 function lockScroll() {
   if (locks++ > 0) return
   const html = document.documentElement
-  const body = document.body
-  const gap = window.innerWidth - html.clientWidth
-  saved = { overflow: body.style.overflow, gutter: html.style.scrollbarGutter, x: window.scrollX, y: window.scrollY }
-  if (gap > 0) html.style.scrollbarGutter = 'stable' // keeps the layout (and the 3D canvas) from jumping
-  body.style.overflow = 'hidden'
+  saved = { x: window.scrollX, y: window.scrollY }
+  if (window.innerWidth - html.clientWidth > 0) html.classList.add('qv-gutter') // keeps the layout (and the 3D canvas) from jumping
+  document.body.classList.add('qv-lock')
 }
 
 function unlockScroll() {
   if (locks === 0 || --locks > 0) return
-  document.body.style.overflow = saved.overflow
-  document.documentElement.style.scrollbarGutter = saved.gutter
-  if (window.scrollX !== saved.x || window.scrollY !== saved.y) window.scrollTo(saved.x, saved.y)
+  document.documentElement.classList.remove('qv-gutter')
+  document.body.classList.remove('qv-lock')
+  if (window.scrollX !== saved.x || window.scrollY !== saved.y) window.scrollTo({ left: saved.x, top: saved.y, behavior: 'instant' })
   saved = null
 }
 
@@ -48,30 +47,44 @@ const MAX_PHI = Math.PI / 2 - 0.1 // never dips below the table
 const BOARD_T = 0.16
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a))
 
-const _box = new THREE.Box3()
 const _m = new THREE.Matrix4()
+const _im = new THREE.Matrix4()
 const _inv = new THREE.Matrix4()
+const _v = new THREE.Vector3()
+const _r = new THREE.Vector3()
+const _sph = new THREE.Sphere()
 
-// Bounds of the dish in `space`'s local coordinates. Sprites (steam) are skipped, and so is
-// anything still fully faded out on the first frame.
+// Bounds of the dish in `space`'s local coordinates, plus its footprint radius around the
+// vertical axis. Uses the vertices themselves: rotated bounding boxes would swell a round
+// pizza by up to 40%. Sprites (steam) are skipped, and so is anything fully faded out.
 function measure(root, space) {
   const box = new THREE.Box3()
+  let foot = 0
   space.updateWorldMatrix(true, true)
   _inv.copy(space.matrixWorld).invert()
   root.traverse((o) => {
-    if (!o.isMesh || !o.geometry) return
+    if (!o.isMesh || !o.geometry?.attributes.position) return
     const mat = Array.isArray(o.material) ? o.material[0] : o.material
     if (mat && mat.transparent && mat.opacity === 0) return
+    _m.multiplyMatrices(_inv, o.matrixWorld)
     if (o.isInstancedMesh) {
-      if (!o.boundingBox) o.computeBoundingBox()
-      _box.copy(o.boundingBox)
-    } else {
-      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox()
-      _box.copy(o.geometry.boundingBox)
+      if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere()
+      for (let i = 0; i < o.count; i++) {
+        o.getMatrixAt(i, _im)
+        _sph.copy(o.geometry.boundingSphere).applyMatrix4(_im.premultiply(_m))
+        box.expandByPoint(_r.setScalar(_sph.radius).add(_sph.center)).expandByPoint(_r.setScalar(-_sph.radius).add(_sph.center))
+        foot = Math.max(foot, Math.hypot(_sph.center.x, _sph.center.z) + _sph.radius)
+      }
+      return
     }
-    box.union(_box.applyMatrix4(_m.multiplyMatrices(_inv, o.matrixWorld)))
+    const pos = o.geometry.attributes.position
+    for (let i = 0; i < pos.count; i++) {
+      _v.fromBufferAttribute(pos, i).applyMatrix4(_m)
+      box.expandByPoint(_v)
+      foot = Math.max(foot, Math.hypot(_v.x, _v.z))
+    }
   })
-  return box
+  return { box, foot }
 }
 
 // Round oiled-wood serving board; its top sits just under y = 0 where every dish rests.
@@ -83,7 +96,7 @@ function Board({ radius }) {
     return t
   }, [])
   return (
-    <mesh position-y={-BOARD_T / 2 - 0.003} scale={[radius, 1, radius]} receiveShadow>
+    <mesh position-y={-BOARD_T / 2 - 0.003} scale={[radius, 1, radius]}>
       <cylinderGeometry args={[1, 0.97, BOARD_T, 96, 1]} />
       <meshStandardMaterial attach="material-0" map={wood} color="#56463a" roughness={0.75} />
       <meshPhysicalMaterial attach="material-1" map={wood} color="#8f8274" roughness={0.6} clearcoat={0.25} clearcoatRoughness={0.5} />
@@ -98,6 +111,7 @@ function Studio({ Dish, scale, turn, api, reduced, onReady, onTouch }) {
   const pop = useRef()
   const dish = useRef()
   const [board, setBoard] = useState(0)
+  const [grounded, setGrounded] = useState(reduced)
   const [s] = useState(() => ({ home: null, goal: null, busy: false, idle: -1e9, sph: new THREE.Spherical(), v: new THREE.Vector3() }))
   const cb = useRef({ onReady, onTouch })
   cb.current = { onReady, onTouch }
@@ -137,10 +151,12 @@ function Studio({ Dish, scale, turn, api, reduced, onReady, onTouch }) {
 
   // Fit the camera to the dish once it is in the scene, then fly in.
   const frame = (ctl) => {
-    const box = measure(dish.current, pop.current)
-    if (box.isEmpty()) box.set(new THREE.Vector3(-1.4, 0, -1.4), new THREE.Vector3(1.4, 1.5, 1.4))
+    let { box, foot } = measure(dish.current, pop.current)
+    if (box.isEmpty()) {
+      box.set(new THREE.Vector3(-1.4, 0, -1.4), new THREE.Vector3(1.4, 1.5, 1.4))
+      foot = 1.4
+    }
     const sphere = box.getBoundingSphere(new THREE.Sphere())
-    const foot = Math.max(-box.min.x, box.max.x, -box.min.z, box.max.z)
     const boardR = THREE.MathUtils.clamp(foot * 1.08 + 0.2, 1.3, 3.2)
     const vfov = THREE.MathUtils.degToRad(camera.fov)
     const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect)
@@ -169,7 +185,11 @@ function Studio({ Dish, scale, turn, api, reduced, onReady, onTouch }) {
     if (!s.home) return frame(ctl)
     const dt = Math.min(delta, 0.1)
     const p = pop.current.scale.x
-    if (p < 1) pop.current.scale.setScalar(p > 0.998 ? 1 : THREE.MathUtils.damp(p, 1, 5, dt))
+    if (p < 1) {
+      const next = p > 0.998 ? 1 : THREE.MathUtils.damp(p, 1, 5, dt)
+      pop.current.scale.setScalar(next)
+      if (next === 1) setGrounded(true)
+    }
     if (s.busy) return
     s.v.copy(camera.position).sub(ctl.target)
     s.sph.setFromVector3(s.v)
@@ -203,25 +223,28 @@ function Studio({ Dish, scale, turn, api, reduced, onReady, onTouch }) {
 
   return (
     <>
-      <ambientLight intensity={0.22} />
-      <directionalLight position={[3.2, 6.5, 3.8]} intensity={2.4} color="#fff0dc" castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} shadow-normalBias={0.03}>
-        <orthographicCamera attach="shadow-camera" args={[-3.6, 3.6, 3.6, -3.6, 0.5, 20]} />
-      </directionalLight>
+      {/* the whole light rig is a softbox studio baked into the environment map */}
       <Environment resolution={256}>
-        <Lightformer form="rect" intensity={2.2} color="#fff6ea" position={[0, 5, 5]} scale={[10, 4, 1]} />
-        <Lightformer form="rect" intensity={1.4} color="#ffcf9a" position={[-6, 2.5, -3]} scale={[6, 4, 1]} />
-        <Lightformer form="rect" intensity={0.7} color="#dfe8ff" position={[6, 2, 1]} scale={[4, 3, 1]} />
-        <Lightformer form="ring" intensity={2} color="#fff4e0" position={[0, 7, 0]} scale={5} rotation-x={Math.PI / 2} />
+        <Lightformer form="rect" intensity={3.2} color="#fff6ea" position={[0, 5, 5]} scale={[10, 4, 1]} />
+        <Lightformer form="rect" intensity={1.8} color="#ffcf9a" position={[-6, 2.5, -3]} scale={[6, 4, 1]} />
+        <Lightformer form="rect" intensity={1} color="#dfe8ff" position={[6, 2, 1]} scale={[4, 3, 1]} />
+        <Lightformer form="ring" intensity={3} color="#fff4e0" position={[0, 7, 0]} scale={5} />
+        <Lightformer form="rect" intensity={0.5} color="#ffb070" position={[0, 1, -7]} scale={[10, 2, 1]} />
+        <Lightformer form="rect" intensity={0.9} color="#ffe9d2" position={[0, 0.6, 7]} scale={[12, 1.6, 1]} />
       </Environment>
 
       <Board radius={board || 2.2} />
-      {board > 0 && <ContactShadows position={[0, -BOARD_T - 0.01, 0]} scale={board * 2 + 4} blur={3.5} far={2} opacity={0.4} resolution={256} frames={1} color="#2a160a" />}
+      {board > 0 && (
+        <>
+          <ContactShadows position={[0, -BOARD_T - 0.01, 0]} scale={board * 2 + 4} blur={3.5} far={2} opacity={0.45} resolution={256} frames={1} color="#2a160a" />
+          {/* the dish's own shadow on the board: live while it pops in, then frozen */}
+          <ContactShadows position={[0, 0.004, 0]} scale={board * 2} blur={2.2} far={1.6} opacity={0.7} resolution={512} frames={grounded ? 1 : Infinity} color="#1a0c04" />
+        </>
+      )}
 
       <group ref={pop} scale={reduced ? 1 : 0.001}>
         <group ref={dish} rotation-y={turn}>
-          <Shadowed>
-            <Dish scale={scale} />
-          </Shadowed>
+          <Dish scale={scale} />
         </group>
       </group>
 
@@ -267,8 +290,41 @@ const KEYS = {
   '0': (a) => a.reset(),
 }
 
+// Real photo when /public/images/items has one, otherwise the studio render of the dish.
+function usePicture(name, shotKey) {
+  const photo = `${BASE}images/items/${slug(name)}.jpg`
+  const [noPhoto, setNoPhoto] = useState(false)
+  const shot = useShot(shotKey || '')
+  return [noPhoto ? shot : photo, () => setNoPhoto(true)]
+}
+
+// Shown instead of the 3D viewer for things without a model (combos) or when WebGL is unavailable.
+function Still({ item, note }) {
+  const [cat, index] = item.shot || (DISHES[item.cat] ? [item.cat, item.index || 0] : [])
+  const shotKey = cat ? `${cat}:${index % SHOTS_PER_CATEGORY}` : ''
+  const [src, onError] = usePicture(item.id || item.name, shotKey)
+  const [loaded, setLoaded] = useState(null)
+  useEffect(() => {
+    if (cat) requestShots(cat, true)
+  }, [cat])
+  return (
+    <div className={`qv-still${loaded && loaded === src ? ' has-image' : ''}`}>
+      {item.was > item.price && <span className="qv-badge">Save ₹{item.was - item.price}</span>}
+      <div className="qv-print">
+        {src && <img key={src} src={src} alt="" decoding="async" onLoad={() => setLoaded(src)} onError={onError} />}
+      </div>
+      <div className="qv-still-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48">
+          <path d="M6 33h36M9 33a15 15 0 0 1 30 0M24 18v-3M21 15h6M4 37h40" />
+        </svg>
+      </div>
+      {note && <p className="qv-still-note">{note}</p>}
+    </div>
+  )
+}
+
 function Viewer({ item }) {
-  const [Dish, scale] = DISHES[item.cat] || DISHES.chai
+  const [Dish, scale] = DISHES[item.cat]
   const [ready, setReady] = useState(false)
   const [touched, setTouched] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -298,12 +354,7 @@ function Viewer({ item }) {
       onKeyDown={onKeyDown}
     >
       {failed ? (
-        <div className="qv-fallback">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3zM4 7.5l8 4.5 8-4.5M12 12v9" />
-          </svg>
-          <p>The 3D preview isn’t available on this device.</p>
-        </div>
+        <Still item={item} note="The 3D preview isn’t available on this device." />
       ) : (
         <>
           <span className="qv-badge" aria-hidden="true">
@@ -312,7 +363,6 @@ function Viewer({ item }) {
           <div className="qv-canvas">
             <Guard onError={() => setFailed(true)}>
               <Canvas
-                shadows="percentage"
                 dpr={[1, 1.75]}
                 camera={{ fov: 30, near: 0.05, far: 100, position: [0, 3, 8] }}
                 gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1 }}
@@ -344,16 +394,12 @@ function Viewer({ item }) {
 
 /* ---------- details ---------- */
 
-// Real photo when /public/images/items has one, otherwise the studio render.
 function Thumb({ cat, index, name }) {
-  const photo = `${BASE}images/items/${slug(name)}.jpg`
-  const [noPhoto, setNoPhoto] = useState(false)
+  const [src, onError] = usePicture(name, `${cat}:${index % SHOTS_PER_CATEGORY}`)
   const [loaded, setLoaded] = useState(null)
-  const shot = useShot(`${cat}:${index % SHOTS_PER_CATEGORY}`)
-  const src = noPhoto ? shot : photo
   return (
     <span className="qv-thumb" aria-hidden="true">
-      {src && <img key={src} src={src} alt="" decoding="async" className={loaded === src ? 'in' : ''} onLoad={() => setLoaded(src)} onError={() => setNoPhoto(true)} />}
+      {src && <img key={src} src={src} alt="" decoding="async" className={loaded === src ? 'in' : ''} onLoad={() => setLoaded(src)} onError={onError} />}
     </span>
   )
 }
@@ -371,6 +417,8 @@ function Sheet({ item, open, onClose, actions, suggestions, onSelect }) {
   const close = useRef(onClose)
   close.current = onClose
   const itemKey = `${item.cat}:${item.name}`
+  const has3d = !!DISHES[item.cat]
+  const kicker = item.catLabel || item.tag
   const pairs = suggestions || []
   const pairCats = [...new Set(pairs.map((p) => p.cat))].join(',')
 
@@ -411,21 +459,22 @@ function Sheet({ item, open, onClose, actions, suggestions, onSelect }) {
     if (open) title.current?.focus({ preventScroll: true })
   }, [itemKey, open])
 
+  // Capture phase on window, so Esc closes only this dialog and never reaches page-level handlers.
   useEffect(() => {
     if (!open) return
     const onKey = (e) => {
       const root = panel.current
-      if (!root) return
+      if (!root || (e.key !== 'Escape' && e.key !== 'Tab')) return
       const active = document.activeElement
       // leave keys alone while another modal stacked on top of us has focus
       if (active && active !== document.body && !root.contains(active) && active.closest('[aria-modal="true"]')) return
       if (e.key === 'Escape') {
-        if (e.defaultPrevented) return
+        if (e.isComposing) return
         e.preventDefault()
+        e.stopPropagation()
         close.current?.()
         return
       }
-      if (e.key !== 'Tab') return
       const els = focusables(root)
       if (!els.length) {
         e.preventDefault()
@@ -445,8 +494,8 @@ function Sheet({ item, open, onClose, actions, suggestions, onSelect }) {
         first.focus()
       }
     }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [open])
 
   useEffect(() => {
@@ -463,11 +512,13 @@ function Sheet({ item, open, onClose, actions, suggestions, onSelect }) {
           </svg>
         </button>
 
-        <div className="qv-media">{settled ? <Viewer key={itemKey} item={item} /> : <span className="qv-spinner" aria-hidden="true" />}</div>
+        <div className="qv-media">
+          {!has3d ? <Still key={itemKey} item={item} /> : settled ? <Viewer key={itemKey} item={item} /> : <span className="qv-spinner" aria-hidden="true" />}
+        </div>
 
         <div className="qv-info" key={itemKey}>
           <div className="qv-head">
-            <p className="qv-kicker">{item.catLabel}</p>
+            {kicker && <p className="qv-kicker">{kicker}</p>}
             <h2 ref={title} id={titleId} className="qv-title" tabIndex={-1}>
               {item.name}
             </h2>
@@ -487,6 +538,11 @@ function Sheet({ item, open, onClose, actions, suggestions, onSelect }) {
           <div className="qv-buy">
             <p className="qv-price">
               <span className="qv-sr">Price </span>₹{item.price}
+              {item.was > item.price && (
+                <s className="qv-was">
+                  <span className="qv-sr">, usually </span>₹{item.was}
+                </s>
+              )}
             </p>
             {actions != null && actions !== false && <div className="qv-actions">{actions}</div>}
           </div>

@@ -3,6 +3,12 @@ import Scene from './Scene.jsx'
 import { store } from './store.js'
 import { CATEGORIES, COMBOS } from './menuData.js'
 import { AddButton, CartButton, CartDrawer } from './features/Cart.jsx'
+import { useMenuFilter, pairingsFor } from './features/menuFilter.js'
+import { MenuTools } from './features/MenuTools.jsx'
+import QuickView from './features/QuickView.jsx'
+import { Preloader } from './features/Preloader.jsx'
+import { SplitText, Marquee, CountUp, useTilt, Magnetic, ScrollProgress, OpenNowBadge } from './features/motion.jsx'
+import { SITE } from './config.js'
 import { SnapshotStudio, requestShots, useShot, SHOTS_PER_CATEGORY } from './Snapshots.jsx'
 
 const NAV = [
@@ -126,17 +132,24 @@ function DishImage({ cat, index, name }) {
   )
 }
 
-function MenuCard({ it, cat, index, delay = 0 }) {
+// Opens the quick view from anywhere on the card; the title button keeps it keyboard reachable.
+function MenuCard({ it, cat, index, delay = 0, onOpen }) {
   const media = useRef()
+  const tilt = useTilt(6)
   return (
-    <article className="mcard" style={{ animationDelay: `${delay}ms` }}>
+    <article ref={tilt} className="mcard tilt" style={{ animationDelay: `${delay}ms` }} onClick={onOpen}>
+      <span className="tilt-glare" aria-hidden="true" />
       <div className="mcard-media" ref={media}>
         <DishImage cat={cat} index={index} name={it.name} />
         {it.best && <span className="ribbon">★ Bestseller</span>}
         <span className={`veg ${it.nonveg ? 'non' : ''}`} title={it.nonveg ? 'Non-veg' : 'Veg'} />
       </div>
       <div className="mcard-body">
-        <h3>{it.name}</h3>
+        <h3>
+          <button type="button" className="mcard-open" onClick={(e) => (e.stopPropagation(), onOpen?.())}>
+            {it.name}
+          </button>
+        </h3>
         <p>{it.desc}</p>
         <div className="mcard-foot">
           <span className="price">₹{it.price}</span>
@@ -147,18 +160,24 @@ function MenuCard({ it, cat, index, delay = 0 }) {
   )
 }
 
-function ComboCard({ combo, delay }) {
+function ComboCard({ combo, delay, onOpen }) {
   const media = useRef()
+  const tilt = useTilt(6)
   const [cat, index] = combo.shot
   return (
-    <article className="mcard combo" style={{ animationDelay: `${delay}ms` }}>
+    <article ref={tilt} className="mcard combo tilt" style={{ animationDelay: `${delay}ms` }} onClick={onOpen}>
+      <span className="tilt-glare" aria-hidden="true" />
       <div className="mcard-media" ref={media}>
         <DishImage cat={cat} index={index} name={combo.id} />
         <span className="ribbon">{combo.tag}</span>
         <span className="save">Save ₹{combo.was - combo.price}</span>
       </div>
       <div className="mcard-body">
-        <h3>{combo.name}</h3>
+        <h3>
+          <button type="button" className="mcard-open" onClick={(e) => (e.stopPropagation(), onOpen?.())}>
+            {combo.name}
+          </button>
+        </h3>
         <p>{combo.desc}</p>
         <div className="mcard-foot">
           <span className="price">
@@ -200,6 +219,9 @@ export default function App() {
     } catch {}
   }
   const current = CATEGORIES.find((c) => c.id === cat)
+  const filter = useMenuFilter(CATEGORIES, cat)
+  const [picked, setPicked] = useState(null)
+  const [sceneReady, setSceneReady] = useState(false)
 
   useEffect(() => requestShots(cat, true), [cat])
   useEffect(() => {
@@ -209,8 +231,10 @@ export default function App() {
 
   return (
     <>
+      <Preloader ready={sceneReady} />
+      <ScrollProgress />
       <div className="canvas-wrap">
-        <Scene category={cat} theme={theme} />
+        <Scene category={cat} theme={theme} onReady={() => setSceneReady(true)} />
       </div>
       <SnapshotStudio />
       <div className="vignette" />
@@ -254,16 +278,23 @@ export default function App() {
           <div className="col left">
             <p className="kicker">Chai · Pizza · Burgers · Pasta · Coffee</p>
             <h1>
-              Chai <em>Sutta</em> Bar
+              <SplitText text="Chai" /> <SplitText as="em" text="Sutta" delay={140} /> <SplitText text="Bar" delay={300} />
             </h1>
             <p className="lead">From our first kulhad of chai to wood-fired pizza, juicy burgers, creamy pasta, cold coffee and midnight Maggi. Everything fresh, everything hot.</p>
             <div className="cta">
-              <button className="btn primary" onClick={() => go('menu')}>
-                Explore the menu
-              </button>
-              <button className="btn" onClick={() => go('visit')}>
-                Find us
-              </button>
+              <Magnetic>
+                <button className="btn primary" onClick={() => go('menu')}>
+                  Explore the menu
+                </button>
+              </Magnetic>
+              <Magnetic>
+                <button className="btn" onClick={() => go('visit')}>
+                  Find us
+                </button>
+              </Magnetic>
+            </div>
+            <div className="hero-badge">
+              <OpenNowBadge />
             </div>
           </div>
           <div className="scroll-hint">
@@ -276,7 +307,9 @@ export default function App() {
           <div className="col right">
             <Reveal>
               <p className="kicker">Our story</p>
-              <h2>One kettle. A whole kitchen.</h2>
+              <h2>
+                <SplitText text="One kettle. A whole kitchen." />
+              </h2>
             </Reveal>
             <Reveal delay={120}>
               <p className="lead">
@@ -286,39 +319,65 @@ export default function App() {
             </Reveal>
             <Reveal delay={240} className="stats">
               <div>
-                <b>60+</b>
+                <b>
+                  <CountUp value="60+" />
+                </b>
                 <span>Dishes & drinks</span>
               </div>
               <div>
-                <b>100%</b>
+                <b>
+                  <CountUp value="100%" />
+                </b>
                 <span>Fresh to order</span>
               </div>
               <div>
-                <b>3 AM</b>
+                <b>
+                  <CountUp value="3 AM" />
+                </b>
                 <span>Open late</span>
               </div>
             </Reveal>
           </div>
         </section>
 
+        <div className="band" aria-hidden="true">
+          <Marquee items={['Kulhad chai', 'Midnight Maggi', 'Wood-fired pizza', 'Cold coffee', 'Hot samosa', 'Smash burgers', 'Creamy pasta', 'Virgin mojito']} />
+        </div>
+
         <section id="menu" className="sec menu">
           <div className="col left wide">
             <Reveal>
               <p className="kicker">The menu</p>
-              <h2>Pick a dish. Watch it spin.</h2>
+              <h2>
+                <SplitText text="Pick a dish. Watch it spin." />
+              </h2>
             </Reveal>
-            <div className="tabs" role="tablist">
+            <MenuTools filter={filter} resultCount={filter.items.length} />
+            <div className={`tabs ${filter.searching ? 'dim' : ''}`} role="tablist">
               {CATEGORIES.map((c) => (
-                <button key={c.id} role="tab" aria-selected={cat === c.id} className={cat === c.id ? 'on' : ''} onClick={() => setCat(c.id)}>
+                <button
+                  key={c.id}
+                  role="tab"
+                  aria-selected={!filter.searching && cat === c.id}
+                  className={!filter.searching && cat === c.id ? 'on' : ''}
+                  onClick={() => {
+                    filter.setQuery('')
+                    setCat(c.id)
+                  }}
+                >
                   {c.label}
                 </button>
               ))}
             </div>
-            <Photo frame="cat-photo" src={`${BASE}images/${cat}.jpg`} alt={current.label} />
-            <p className="blurb">{current.blurb}</p>
-            <div className="menu-grid" key={cat}>
-              {current.items.map((it, i) => (
-                <MenuCard key={it.name} it={it} cat={cat} index={i} delay={i * 70} />
+            {!filter.searching && (
+              <>
+                <Photo frame="cat-photo" src={`${BASE}images/${cat}.jpg`} alt={current.label} />
+                <p className="blurb">{current.blurb}</p>
+              </>
+            )}
+            <div className="menu-grid" key={filter.searching ? 'search' : cat}>
+              {filter.items.map((it, i) => (
+                <MenuCard key={`${it.cat}:${it.name}`} it={it} cat={it.cat} index={it.index} delay={Math.min(i, 8) * 60} onOpen={() => setPicked(it)} />
               ))}
             </div>
             <div className="combos">
@@ -328,7 +387,7 @@ export default function App() {
               </Reveal>
               <div className="menu-grid">
                 {COMBOS.map((c, i) => (
-                  <ComboCard key={c.id} combo={c} delay={i * 70} />
+                  <ComboCard key={c.id} combo={c} delay={i * 70} onOpen={() => setPicked(c)} />
                 ))}
               </div>
             </div>
@@ -339,7 +398,9 @@ export default function App() {
           <div className="col right">
             <Reveal>
               <p className="kicker">The vibe</p>
-              <h2>Lanterns, neon & good company.</h2>
+              <h2>
+                <SplitText text="Lanterns, neon & good company." />
+              </h2>
             </Reveal>
             <div className="cards">
               {[
@@ -361,23 +422,34 @@ export default function App() {
           <div className="col center">
             <Reveal>
               <p className="kicker">Visit us</p>
-              <h2>Your cup is waiting.</h2>
+              <h2>
+                <SplitText text="Your cup is waiting." />
+              </h2>
+              <div className="visit-badge">
+                <OpenNowBadge />
+              </div>
             </Reveal>
             <Reveal delay={120} className="visit-grid">
               <div>
                 <h4>Address</h4>
-                <p>Your street address here</p>
-                <p>City, State – PIN</p>
+                {SITE.address.map((l) => (
+                  <p key={l}>{l}</p>
+                ))}
               </div>
               <div>
                 <h4>Hours</h4>
-                <p>Mon – Fri · 10 AM – 1 AM</p>
-                <p>Sat – Sun · 9 AM – 3 AM</p>
+                {SITE.hours.map((h) => (
+                  <p key={h.label}>{h.label}</p>
+                ))}
               </div>
               <div>
                 <h4>Say hello</h4>
-                <p>+91 00000 00000</p>
-                <p>hello@yourdomain.com</p>
+                <p>
+                  <a href={`tel:${SITE.phone.replace(/[^+\d]/g, '')}`}>{SITE.phone}</a>
+                </p>
+                <p>
+                  <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+                </p>
               </div>
             </Reveal>
             <Reveal delay={240}>
@@ -385,11 +457,20 @@ export default function App() {
                 Back to the top ↑
               </button>
             </Reveal>
-            <footer>© {new Date().getFullYear()} Chai Sutta Bar · Brewed with love</footer>
+            <footer>
+              © {new Date().getFullYear()} {SITE.name} · Brewed with love
+            </footer>
           </div>
         </section>
       </main>
       <CartDrawer onBrowse={() => go('menu')} />
+      <QuickView
+        item={picked}
+        onClose={() => setPicked(null)}
+        suggestions={pairingsFor(picked, CATEGORIES)}
+        onSelect={setPicked}
+        actions={picked && <AddButton item={picked} cat={picked.cat ?? picked.shot[0]} index={picked.index ?? picked.shot[1]} />}
+      />
     </>
   )
 }

@@ -1,0 +1,106 @@
+/* motion & delight: preloader, split text, marquee, count-up, tilt, magnetic, scroll progress, open-now badge */
+
+.st-sr, .pl-sr, .on-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* preloader */
+.pl-root { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px 16px; background: var(--bg); color: var(--cream); overflow: hidden; transition: transform 1s cubic-bezier(0.77, 0, 0.18, 1), border-radius 1s cubic-bezier(0.77, 0, 0.18, 1), opacity 0.45s ease; }
+.pl-root.pl-out { transform: translate3d(0, -100%, 0); border-bottom-left-radius: 50% 16vh; border-bottom-right-radius: 50% 16vh; pointer-events: none; }
+.pl-inner { display: flex; flex-direction: column; align-items: center; text-align: center; transition: opacity 0.45s ease, transform 0.8s cubic-bezier(0.6, 0, 0.2, 1); }
+.pl-out .pl-inner { opacity: 0; transform: translateY(-28px); }
+.pl-art { position: relative; width: clamp(112px, 30vw, 148px); margin-bottom: 24px; }
+.pl-art::before { content: ''; position: absolute; inset: -30% -40%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--gold) 16%, transparent), transparent); pointer-events: none; animation: pl-glow 3.2s ease-in-out infinite alternate; }
+.pl-cup { position: relative; display: block; width: 100%; height: auto; overflow: visible; }
+.pl-line { fill: none; stroke: var(--gold); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.pl-ridge { stroke-width: 1.1; opacity: 0.5; }
+.pl-rim { fill: color-mix(in srgb, var(--gold) 6%, transparent); }
+.pl-lip { stroke-width: 1; opacity: 0.55; }
+.pl-clay { fill: color-mix(in srgb, var(--gold) 7%, transparent); }
+.pl-stop-top { stop-color: color-mix(in srgb, var(--gold) 82%, var(--bg)); }
+.pl-stop-deep { stop-color: color-mix(in srgb, var(--gold) 46%, var(--bg)); }
+:root[data-theme='light'] .pl-stop-deep { stop-color: color-mix(in srgb, var(--gold) 72%, var(--cream)); }
+.pl-wave-front path { stroke: color-mix(in srgb, var(--gold) 70%, var(--cream)); stroke-width: 1.1; }
+.pl-wave-back path { fill: color-mix(in srgb, var(--gold) 38%, var(--bg)); opacity: 0.7; }
+.pl-wave { animation: pl-wave 2.4s linear infinite; }
+.pl-wave-back { animation-duration: 3.8s; animation-direction: reverse; }
+.pl-steam path { fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 0.34 1.4; stroke-dashoffset: 0.34; opacity: 0; animation: pl-steam 3s ease-in-out infinite; }
+.pl-steam path:nth-child(2) { animation-delay: 1s; }
+.pl-steam path:nth-child(3) { animation-delay: 2s; }
+.pl-kicker { font-family: var(--sans); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.34em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; padding-left: 0.34em; animation: pl-rise 0.9s 0.1s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pl-brand { font-family: var(--serif); font-size: clamp(1.75rem, 7vw, 2.6rem); font-weight: 600; line-height: 1.05; letter-spacing: -0.01em; font-variation-settings: 'opsz' 144, 'SOFT' 50; margin: 0; animation: pl-rise 0.9s 0.2s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pl-brand em { font-style: italic; color: var(--gold); }
+.pl-meta { display: flex; align-items: center; gap: 14px; margin-top: 22px; animation: pl-rise 0.9s 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pl-track { position: relative; width: clamp(96px, 30vw, 140px); height: 2px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.pl-bar { position: absolute; inset: 0; background: var(--gold); transform: scaleX(0); transform-origin: 0 50%; }
+.pl-pct { min-width: 4.2ch; font-family: var(--sans); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.08em; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+@keyframes pl-wave { to { transform: translateX(-40px); } }
+@keyframes pl-steam { 0% { stroke-dashoffset: 0.34; opacity: 0; } 20% { opacity: 0.75; } 75% { opacity: 0.3; } 100% { stroke-dashoffset: -1; opacity: 0; } }
+@keyframes pl-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes pl-glow { from { opacity: 0.55; } to { opacity: 1; } }
+
+/* split text */
+.st-text .st-word, .st-text .st-char { font-family: inherit; font-size: inherit; font-weight: inherit; font-style: inherit; letter-spacing: inherit; color: inherit; }
+.st-word { display: inline-block; white-space: nowrap; }
+.st-char { display: inline-block; opacity: 0; transform: translate3d(0, 0.55em, 0) rotate(4deg); transform-origin: 0 100%; filter: blur(8px); transition: opacity 0.7s ease, transform 0.95s cubic-bezier(0.2, 0.75, 0.2, 1), filter 0.8s ease; transition-delay: calc(var(--st-delay, 0ms) + var(--i, 0) * var(--st-stagger, 35ms)); }
+.st-in .st-char { opacity: 1; transform: none; filter: blur(0); }
+
+/* count up — the doubled class outranks parent rules like `.stats span` */
+.st-count.st-count, .st-count .st-face, .st-count .st-num { font-family: inherit; font-size: inherit; font-weight: inherit; line-height: inherit; letter-spacing: inherit; color: inherit; }
+.st-count { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.st-count .st-num { display: inline-block; text-align: right; }
+
+/* marquee */
+.mq-root { position: relative; width: 100%; max-width: 100%; overflow: hidden; padding: 0.22em 0; font-family: var(--serif); font-size: clamp(2rem, 6.5vw, 5rem); font-style: italic; font-weight: 500; line-height: 1.15; letter-spacing: -0.01em; font-variation-settings: 'opsz' 144, 'SOFT' 100; color: var(--cream); -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); }
+.mq-track { display: flex; width: max-content; animation: mq-scroll var(--mq-dur, 40s) linear infinite; }
+.mq-rev .mq-track { animation-direction: reverse; }
+.mq-idle .mq-track { animation-play-state: paused; }
+@media (hover: hover) { .mq-root:hover .mq-track { animation-play-state: paused; } }
+.mq-group { display: flex; flex: none; margin: 0; padding: 0; list-style: none; }
+.mq-item { display: flex; align-items: center; flex: none; white-space: nowrap; }
+.mq-gold { color: var(--gold); }
+.mq-sep { display: inline-block; margin: 0 0.85em; font-size: 0.4em; font-style: normal; color: var(--gold); opacity: 0.85; transform: translateY(-0.08em); }
+@keyframes mq-scroll { to { transform: translate3d(-50%, 0, 0); } }
+
+/* tilt (useTilt) — JS eases --rx/--ry (deg), --gx/--gy (glare %) and --tilt-p (hover 0..1) */
+.tilt.tilt-on, .tilt.tilt-on:hover { transform: perspective(900px) translate3d(0, calc(var(--tilt-p, 0) * var(--tilt-lift, -4px)), 0) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+:where(.tilt) { position: relative; } /* anchors .tilt-glare; zero specificity so any own position wins */
+/* an entrance animation filling `both` would pin transform forever; keep only its backwards fill */
+.tilt[class] { animation-fill-mode: backwards; }
+/* follow the pointer 1:1 while hovered (JS already eases); other transitions keep their timing */
+.tilt.tilt-on:hover { transition-property: border-color, background-color, box-shadow, color, opacity; }
+.tilt.tilt-on { will-change: transform; }
+.tilt-glare { position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; opacity: var(--tilt-p, 0); background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), color-mix(in srgb, var(--gold) 26%, transparent), transparent 58%); }
+
+/* magnetic */
+.mag-wrap { display: inline-block; vertical-align: middle; }
+.mag-in { display: inline-block; }
+.mag-on .mag-in { will-change: transform; }
+
+/* scroll progress */
+.sp-root { position: fixed; top: 0; left: 0; right: 0; z-index: 30; height: 2px; pointer-events: none; }
+.sp-bar { height: 100%; transform: scaleX(0); transform-origin: 0 50%; background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 30%, transparent), var(--gold)); box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 55%, transparent); border-radius: 0 2px 2px 0; }
+
+/* open-now badge — doubled classes outrank generic parent rules like `.card span` */
+.on-badge.on-badge { --on-live: #3fb94f; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 7px 14px 7px 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--glass); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font-family: var(--sans); font-size: 0.78rem; font-weight: 600; line-height: 1.3; letter-spacing: 0.02em; color: var(--cream); white-space: nowrap; }
+.on-badge.on-soon { --on-live: var(--gold); }
+.on-badge .on-state, .on-badge .on-sep, .on-badge .on-when { font-size: inherit; line-height: inherit; color: inherit; }
+.on-dot { position: relative; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--on-live); box-shadow: 0 0 0 3px color-mix(in srgb, var(--on-live) 22%, transparent); }
+.on-open .on-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--on-live); animation: on-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+.on-sep { opacity: 0.55; }
+.on-badge .on-when { font-weight: 500; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+.on-badge.on-closed { color: var(--muted); }
+.on-closed .on-dot { background: var(--muted); box-shadow: none; opacity: 0.75; }
+@keyframes on-pulse { 0% { transform: scale(1); opacity: 0.65; } 80%, 100% { transform: scale(3.2); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-wave, .pl-art::before, .pl-kicker, .pl-brand, .pl-meta { animation: none; }
+  .pl-steam path { animation: none; stroke-dasharray: none; opacity: 0.35; }
+  .pl-root.pl-out { transform: none; border-radius: 0; opacity: 0; transition: opacity 0.3s ease; }
+  .pl-out .pl-inner { transform: none; }
+  .st-char { opacity: 1; transform: none; filter: none; transition: none; }
+  .mq-track { animation: none; }
+  .on-open .on-dot::after { animation: none; opacity: 0; }
+}
+.pl-calm .pl-wave, .pl-calm .pl-art::before, .pl-calm .pl-kicker, .pl-calm .pl-brand, .pl-calm .pl-meta { animation: none; }
+.pl-calm .pl-steam path { animation: none; stroke-dasharray: none; opacity: 0.35; }
+.pl-root.pl-calm.pl-out { transform: none; border-radius: 0; opacity: 0; transition: opacity 0.3s ease; }
+.pl-calm.pl-out .pl-inner { transform: none; }
