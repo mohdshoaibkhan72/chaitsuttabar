@@ -1,0 +1,68 @@
+/* menu search / veg filter / sort */
+.mt-tools { margin: 4px 0 16px; }
+.mt-bar { display: flex; flex-wrap: wrap; gap: 8px; }
+.mt-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.mt-search, .mt-veg, .mt-sort { height: 46px; border: 1px solid var(--line); border-radius: 99px; background: var(--glass); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); transition: border-color 0.25s, box-shadow 0.25s, background 0.25s; }
+
+.mt-search { flex: 1 1 240px; min-width: 0; display: flex; align-items: center; padding: 0 3px 0 15px; cursor: text; }
+.mt-search:hover { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.mt-search:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 22%, transparent); }
+.mt-icon { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; pointer-events: none; transition: stroke 0.25s; }
+.mt-search:focus-within .mt-icon { stroke: var(--gold); }
+.mt-search input { flex: 1; min-width: 0; height: 100%; padding: 0 8px 0 10px; border: 0; outline: none; background: none; color: var(--cream); font: inherit; font-size: 0.95rem; }
+.mt-search input::placeholder { color: var(--muted); opacity: 0.75; }
+.mt-search input::-webkit-search-cancel-button, .mt-search input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+
+.mt-clear { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); transition: background 0.2s, color 0.2s; }
+.mt-clear svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.mt-clear:hover { color: var(--cream); background: color-mix(in srgb, var(--gold) 16%, transparent); }
+.mt-kbd { flex: none; display: none; place-items: center; min-width: 26px; height: 26px; margin-right: 9px; padding: 0 7px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 7px; font: 600 0.75rem var(--sans); color: var(--muted); }
+@media (hover: hover) and (pointer: fine) { .mt-kbd { display: grid; } }
+
+.mt-controls { display: flex; gap: 8px; flex: 0 1 auto; min-width: 0; }
+
+.mt-veg { display: inline-flex; align-items: center; gap: 10px; padding: 0 12px 0 14px; color: var(--cream); font-size: 0.86rem; font-weight: 600; white-space: nowrap; }
+.mt-veg:hover { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.mt-veg.is-on { border-color: rgba(63, 185, 79, 0.65); background: color-mix(in srgb, #3fb94f 12%, var(--glass)); }
+.mt-veg-mark { width: 14px; height: 14px; flex: none; border: 1.5px solid #3fb94f; border-radius: 3px; display: grid; place-items: center; background: #fff; }
+.mt-veg-mark::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #3fb94f; }
+.mt-track { position: relative; width: 34px; height: 20px; flex: none; border-radius: 99px; background: var(--line); background: color-mix(in srgb, var(--muted) 38%, transparent); transition: background 0.25s; }
+.mt-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--cream); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1), background 0.25s; }
+.mt-veg.is-on .mt-track { background: #3fb94f; }
+.mt-veg.is-on .mt-thumb { transform: translateX(14px); background: #fff; }
+
+.mt-sort { position: relative; display: flex; align-items: center; min-width: 0; }
+.mt-sort:hover { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.mt-sort-icon, .mt-chev { position: absolute; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); fill: none; stroke: var(--gold); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.mt-sort-icon { left: 14px; }
+.mt-chev { right: 13px; stroke: var(--muted); }
+.mt-sort select { width: 100%; height: 100%; min-width: 0; padding: 0 36px 0 38px; border: 0; border-radius: 99px; background: transparent; color: var(--cream); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; -webkit-appearance: none; appearance: none; text-overflow: ellipsis; }
+.mt-sort option { background-color: var(--bg); color: var(--cream); }
+
+.mt-veg:focus-visible, .mt-clear:focus-visible, .mt-sort select:focus-visible, .mt-ideas button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.mt-status > * { margin-top: 12px; animation: mt-in 0.35s ease both; }
+.mt-count { font-size: 0.85rem; color: var(--muted); text-shadow: 0 2px 10px var(--shadow); }
+.mt-count b { color: var(--gold); font-weight: 700; }
+.mt-q { color: var(--cream); font-weight: 600; overflow-wrap: anywhere; }
+.mt-empty { padding: 22px 18px; border: 1px dashed var(--line); border-radius: 18px; background: var(--glass); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); text-align: center; }
+.mt-empty-title { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.mt-empty-sub { margin-top: 4px; font-size: 0.82rem; color: var(--muted); }
+.mt-ideas { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+.mt-ideas button { min-height: 40px; padding: 0 16px; border: 1px solid var(--line); border-radius: 99px; background: var(--card); font-size: 0.84rem; font-weight: 600; transition: border-color 0.25s, background 0.25s, color 0.25s; }
+.mt-ideas button:hover { border-color: var(--gold); }
+.mt-ideas .mt-ideas-alt { border-color: var(--gold); color: var(--gold); }
+@keyframes mt-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 560px) {
+  .mt-search { flex-basis: 100%; }
+  .mt-controls { flex: 1 1 100%; }
+  .mt-sort { flex: 1 1 auto; }
+  .mt-veg { flex: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mt-status > * { animation: none; }
+  .mt-search, .mt-veg, .mt-sort, .mt-track, .mt-thumb, .mt-clear, .mt-ideas button { transition: none; }
+}
