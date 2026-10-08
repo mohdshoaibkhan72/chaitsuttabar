@@ -1,0 +1,67 @@
+export const CATEGORIES = [
+  {
+    id: 'chai',
+    label: 'Chai',
+    blurb: 'Brewed slow in kulhads, the way the street does it.',
+    items: [
+      { name: 'Kulhad Chai', desc: 'Classic milk tea in a clay cup', price: 30, best: true },
+      { name: 'Masala Chai', desc: 'Ginger, cardamom, black pepper', price: 35, best: true },
+      { name: 'Adrak Elaichi Chai', desc: 'Strong ginger & green cardamom', price: 35 },
+      { name: 'Kesar Chai', desc: 'Saffron-infused, slow simmered', price: 55 },
+      { name: 'Tulsi Green Chai', desc: 'Holy basil, light & refreshing', price: 40 },
+      { name: 'Irani Chai', desc: 'Hyderabadi style, creamy & rich', price: 45 },
+    ],
+  },
+  {
+    id: 'snacks',
+    label: 'Snacks',
+    blurb: 'Crisp, hot and made to dunk in chai.',
+    items: [
+      { name: 'Punjabi Samosa', desc: 'Two pieces, tamarind & mint chutney', price: 40, best: true },
+      { name: 'Bread Pakora', desc: 'Stuffed, gram-flour fried', price: 40 },
+      { name: 'Kachori Sabzi', desc: 'Flaky kachori with aloo curry', price: 60 },
+      { name: 'Aloo Tikki', desc: 'Griddle-crisp potato patties', price: 55 },
+      { name: 'Paneer Pakora', desc: 'Spiced paneer fritters', price: 90 },
+      { name: 'Masala Papad', desc: 'Roasted, onion-tomato topped', price: 35 },
+    ],
+  },
+  {
+    id: 'maggi',
+    label: 'Maggi & Pasta',
+    blurb: 'Comfort noodles for 2 AM hunger.',
+    items: [
+      { name: 'Masala Maggi', desc: 'The OG, with veggies & spice', price: 60, best: true },
+      { name: 'Cheese Maggi', desc: 'Loaded with melted cheese', price: 80 },
+      { name: 'Peri Peri Maggi', desc: 'Fiery with a tangy kick', price: 85 },
+      { name: 'Egg Maggi', desc: 'Scrambled egg tossed in', price: 80, nonveg: true },
+      { name: 'White Sauce Pasta', desc: 'Creamy penne with herbs', price: 120 },
+      { name: 'Red Sauce Pasta', desc: 'Tangy arrabbiata penne', price: 110 },
+    ],
+  },
+  {
+    id: 'burgers',
+    label: 'Burgers & Rolls',
+    blurb: 'Big bites, built on the grill.',
+    items: [
+      { name: 'Vada Pav Burger', desc: 'Mumbai street flavour, stacked', price: 70, best: true },
+      { name: 'Cheese Veg Burger', desc: 'Crispy patty, cheese slice, slaw', price: 99 },
+      { name: 'Paneer Tikka Roll', desc: 'Smoky paneer, mint mayo', price: 110 },
+      { name: 'Chicken Tikka Roll', desc: 'Tandoor-grilled, onion salad', price: 130, nonveg: true },
+      { name: 'Grilled Sandwich', desc: 'Corn, cheese & capsicum', price: 90 },
+      { name: 'Loaded Fries', desc: 'Peri-peri dust, cheese drizzle', price: 100 },
+    ],
+  },
+  {
+    id: 'sweets',
+    label: 'Sweets & Cool',
+    blurb: 'Because every chai deserves a sweet ending.',
+    items: [
+      { name: 'Gulab Jamun', desc: 'Warm, two pieces in syrup', price: 60, best: true },
+      { name: 'Bun Maska', desc: 'Soft bun, loads of butter', price: 45 },
+      { name: 'Walnut Brownie', desc: 'Fudgy, served warm', price: 110 },
+      { name: 'Cold Coffee', desc: 'Thick, blended with ice cream', price: 99 },
+      { name: 'Sweet Lassi', desc: 'Punjabi style, topped with malai', price: 80 },
+      { name: 'Masala Cola', desc: 'Fizzy, chaat-masala twist', price: 60 },
+    ],
+  },
+]
