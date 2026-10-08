@@ -46,30 +46,58 @@ export function Pop({ children, speed = 5 }) {
   )
 }
 
-// Soft rising steam.
-export function Steam({ position = [0, 0, 0], count = 7, height = 1.6, spread = 0.25, opacity = 0.13 }) {
+// Soft rising steam with enhanced wisp effect.
+export function Steam({ position = [0, 0, 0], count = 8, height = 1.8, spread = 0.28, opacity = 0.16 }) {
   const refs = useRef([])
-  const seeds = useMemo(() => Array.from({ length: count }, (_, i) => ({ off: i / count, ph: i * 2.1 })), [count])
+  const seeds = useMemo(() =>
+    Array.from({ length: count }, (_, i) => ({
+      off: i / count,
+      ph: i * 2.1,
+      r: 0.8 + Math.random() * 0.4,
+    })),
+    [count]
+  )
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
     seeds.forEach((s, i) => {
       const m = refs.current[i]
       if (!m) return
-      const p = (t * 0.2 + s.off) % 1
-      m.position.set(Math.sin(t * 1.1 + s.ph) * spread * p * 1.6, p * height, Math.cos(t * 0.9 + s.ph) * spread * p)
-      m.scale.setScalar(0.07 + p * 0.2)
-      m.material.opacity = Math.sin(p * Math.PI) * opacity
+      const p = (t * 0.18 + s.off) % 1
+      const drift = spread * p * 1.8
+      m.position.set(
+        Math.sin(t * s.r + s.ph) * drift,
+        p * height,
+        Math.cos(t * (s.r * 0.8) + s.ph) * drift
+      )
+      m.scale.setScalar(0.06 + p * 0.24)
+      m.material.opacity = Math.sin(p * Math.PI) * opacity * (0.7 + 0.3 * Math.sin(t * 2.2 + i))
     })
   })
   return (
     <group position={position}>
       {seeds.map((_, i) => (
         <mesh key={i} ref={(el) => (refs.current[i] = el)}>
-          <sphereGeometry args={[1, 14, 14]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0} depthWrite={false} />
+          <sphereGeometry args={[1, 10, 10]} />
+          <meshBasicMaterial color="#ffe8cc" transparent opacity={0} depthWrite={false} />
         </mesh>
       ))}
     </group>
+  )
+}
+
+// Glowing accent ring beneath a dish.
+export function GlowRing({ color = '#f5a623', radius = 1.6, opacity = 0.25 }) {
+  const ref = useRef()
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      ref.current.material.opacity = opacity * (0.7 + 0.3 * Math.sin(clock.elapsedTime * 1.4))
+    }
+  })
+  return (
+    <mesh ref={ref} rotation-x={-Math.PI / 2} position={[0, -0.01, 0]}>
+      <ringGeometry args={[radius * 0.6, radius, 64]} />
+      <meshBasicMaterial color={color} transparent opacity={opacity} depthWrite={false} />
+    </mesh>
   )
 }
 
@@ -723,39 +751,83 @@ export function Lantern({ position, color = '#ff9a3c', length = 4, phase = 0 }) 
 }
 
 export function Neon({ color = '#ff3d81', ...props }) {
+  const ref = useRef()
+  const inner = useRef()
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime
+    const flicker = 0.85 + 0.15 * Math.sin(t * 7.3) * Math.sin(t * 2.1)
+    if (ref.current) ref.current.material.opacity = 0.12 * flicker
+    if (inner.current) inner.current.material.opacity = 0.08 * flicker
+  })
   return (
     <group {...props}>
+      {/* Main neon ring */}
       <mesh>
-        <torusGeometry args={[2.1, 0.06, 16, 96]} />
+        <torusGeometry args={[2.15, 0.065, 20, 128]} />
         <meshBasicMaterial color={color} toneMapped={false} />
       </mesh>
+      {/* Inner accent ring */}
       <mesh>
-        <torusGeometry args={[1.7, 0.04, 16, 96]} />
+        <torusGeometry args={[1.72, 0.045, 16, 128]} />
         <meshBasicMaterial color="#42e8ff" toneMapped={false} />
       </mesh>
-      <mesh>
-        <torusGeometry args={[2.1, 0.22, 12, 96]} />
-        <meshBasicMaterial color={color} transparent opacity={0.1} depthWrite={false} />
+      {/* Outer glow halo — flickering */}
+      <mesh ref={ref}>
+        <torusGeometry args={[2.15, 0.38, 14, 128]} />
+        <meshBasicMaterial color={color} transparent opacity={0.12} depthWrite={false} toneMapped={false} />
       </mesh>
+      {/* Inner glow halo */}
+      <mesh ref={inner}>
+        <torusGeometry args={[1.72, 0.28, 14, 128]} />
+        <meshBasicMaterial color="#42e8ff" transparent opacity={0.08} depthWrite={false} toneMapped={false} />
+      </mesh>
+      {/* Point light behind the sign */}
+      <pointLight color={color} intensity={2.5} distance={6} position={[0, 0, 0.3]} />
+      <pointLight color="#42e8ff" intensity={1.5} distance={5} position={[0, 0, -0.3]} />
     </group>
   )
 }
 
-const PLAT_DARK = new THREE.Color('#d8cfc2')
-const PLAT_LIGHT = new THREE.Color('#3a2c22')
+const PLAT_DARK  = new THREE.Color('#1A0E06')  // espresso
+const PLAT_LIGHT = new THREE.Color('#3A2010')  // dark walnut — visible on parchment bg
 
-export function Platform({ radius = 2.7, color = '#f5a623' }) {
-  const mat = useRef()
-  useFrame(() => mat.current.color.lerpColors(PLAT_DARK, PLAT_LIGHT, store.themeT))
+export function Platform({ radius = 2.7, color = '#C88A2C' }) {
+  const mat     = useRef()
+  const ringRef = useRef()
+  useFrame(({ clock }) => {
+    mat.current.color.lerpColors(PLAT_DARK, PLAT_LIGHT, store.themeT)
+    if (ringRef.current) {
+      ringRef.current.material.opacity = 0.75 + 0.25 * Math.sin(clock.elapsedTime * 1.8)
+    }
+  })
   return (
     <group position={[0, -1.15, 0]}>
+      {/* Main disc — dark polished stone/wood */}
       <mesh receiveShadow>
-        <cylinderGeometry args={[radius, radius + 0.15, 0.3, 80]} />
-        <meshPhysicalMaterial ref={mat} color="#d8cfc2" roughness={0.45} metalness={0.05} clearcoat={0.3} />
+        <cylinderGeometry args={[radius, radius + 0.15, 0.28, 88]} />
+        <meshPhysicalMaterial
+          ref={mat}
+          color="#1A0E06"
+          roughness={0.22}
+          metalness={0.06}
+          clearcoat={0.85}
+          clearcoatRoughness={0.08}
+        />
       </mesh>
-      <mesh position={[0, 0.151, 0]} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[radius - 0.12, radius - 0.07, 96]} />
-        <meshBasicMaterial color={color} toneMapped={false} />
+      {/* Animated gold accent ring */}
+      <mesh ref={ringRef} position={[0, 0.152, 0]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[radius - 0.14, radius - 0.07, 96]} />
+        <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.8} />
+      </mesh>
+      {/* Inner decorative ring */}
+      <mesh position={[0, 0.152, 0]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[radius * 0.55, radius * 0.58, 64]} />
+        <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.4} />
+      </mesh>
+      {/* Subtle ground glow */}
+      <mesh position={[0, 0.153, 0]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[radius * 0.9, 64]} />
+        <meshBasicMaterial color={color} transparent opacity={0.04} depthWrite={false} />
       </mesh>
     </group>
   )
