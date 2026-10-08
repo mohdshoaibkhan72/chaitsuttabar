@@ -224,6 +224,10 @@ export default function App() {
   const [sceneReady, setSceneReady] = useState(false)
 
   useEffect(() => requestShots(cat, true), [cat])
+  // search results can span many categories: render the ones on screen first
+  useEffect(() => {
+    if (filter.searching) [...new Set(filter.items.map((it) => it.cat))].reverse().forEach((c) => requestShots(c, true))
+  }, [filter.searching, filter.items])
   useEffect(() => {
     const t = setTimeout(() => CATEGORIES.forEach((c) => requestShots(c.id)), 4000)
     return () => clearTimeout(t)

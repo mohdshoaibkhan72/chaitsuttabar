@@ -527,7 +527,7 @@ export function Kulhad(props) {
       </mesh>
       <group position={[0, 0.06, 0]}>
         <mesh geometry={kulhadGeo()}>
-          <meshStandardMaterial map={t} bumpMap={t} bumpScale={1.2} roughness={0.92} vertexColors side={THREE.DoubleSide} />
+          <meshStandardMaterial map={t} bumpMap={t} bumpScale={0.4} roughness={0.92} vertexColors side={THREE.DoubleSide} />
         </mesh>
         <mesh position={[0, 1.04, 0]} rotation-x={-Math.PI / 2}>
           <circleGeometry args={[0.672, 56]} />

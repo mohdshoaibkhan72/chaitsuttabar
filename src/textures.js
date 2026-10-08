@@ -303,10 +303,11 @@ export const terracottaTex = () =>
     paint(g, w, h, (u, v, c) => {
       const n = noise(u * 512, v * 256 + 60)
       const grit = noise(u * 2048 + 3, v * 2048 + 99)
-      const ring = Math.sin((v * 48 + n * 1.5) * TAU) * 0.5 + 0.5
+      // faint throwing rings from the potter's wheel; kept subtle so they don't read as weave
+      const ring = Math.sin((v * 14 + n * 0.8) * TAU) * 0.5 + 0.5
       mix(c, dark, base, sstep(0.2, 0.55, n))
       over(c, light, sstep(0.55, 0.8, n) * 0.6)
-      mul(c, 0.94 + ring * 0.08 + (grit - 0.5) * 0.3)
+      mul(c, 0.97 + ring * 0.035 + (grit - 0.5) * 0.16)
     })
     blobs(g, r, 1800, w, h, ['#d6926a', '#5e2810', '#c98258'], 0.5, 1.4, 0.35)
   })
