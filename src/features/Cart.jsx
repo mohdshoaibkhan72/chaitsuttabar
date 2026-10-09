@@ -27,7 +27,8 @@ const stop = (e) => e.stopPropagation()
 const stopKeys = (e) => (e.key === 'Enter' || e.key === ' ') && e.stopPropagation()
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
-const focusables = (root) => [...root.querySelectorAll(FOCUSABLE)].filter((el) => !el.closest('[inert]') && el.getClientRects().length)
+const focusables = (root) =>
+  [...root.querySelectorAll(FOCUSABLE)].filter((el) => !el.closest('[inert]') && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden')
 
 const PlusIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">

@@ -78,13 +78,22 @@ export function addToCart(line, fromEl) {
   const found = cart.lines.find((l) => l.key === key)
   if (found) {
     if (found.qty >= MAX_QTY) return
-    commit(cart.lines.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l)))
+    // refresh name/price too, in case the menu changed since this line was saved
+    commit(cart.lines.map((l) => (l.key === key ? { ...l, name: line.name ?? l.name, price: Number(line.price ?? l.price), nonveg: !!(line.nonveg ?? l.nonveg), qty: l.qty + 1 } : l)))
   } else {
     const fresh = clean({ ...line, key, qty: 1 })
     if (!fresh) return
     commit([...cart.lines, fresh])
   }
   if (fromEl) flyToCart(fromEl)
+}
+
+// Re-price saved lines against the current menu and drop dishes that no longer exist.
+// catalog: Map of key -> { name, price, nonveg }
+export function syncCart(catalog) {
+  const next = cart.lines.filter((l) => catalog.has(l.key)).map((l) => ({ ...l, ...catalog.get(l.key) }))
+  const same = next.length === cart.lines.length && next.every((l, i) => l.price === cart.lines[i].price && l.name === cart.lines[i].name && l.nonveg === cart.lines[i].nonveg)
+  if (!same) commit(next)
 }
 
 export function setQty(key, qty) {

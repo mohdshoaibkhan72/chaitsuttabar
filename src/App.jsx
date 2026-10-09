@@ -3,6 +3,7 @@ import Scene from './Scene.jsx'
 import { store } from './store.js'
 import { CATEGORIES, COMBOS } from './menuData.js'
 import { AddButton, CartButton, CartDrawer } from './features/Cart.jsx'
+import { syncCart } from './features/cart.js'
 import { useMenuFilter, pairingsFor } from './features/menuFilter.js'
 import { MenuTools } from './features/MenuTools.jsx'
 import QuickView from './features/QuickView.jsx'
@@ -168,7 +169,7 @@ function ComboCard({ combo, delay, onOpen }) {
     <article ref={tilt} className="mcard combo tilt" style={{ animationDelay: `${delay}ms` }} onClick={onOpen}>
       <span className="tilt-glare" aria-hidden="true" />
       <div className="mcard-media" ref={media}>
-        <DishImage cat={cat} index={index} name={combo.id} />
+        <DishImage cat={cat} index={index} name={combo.name} />
         <span className="ribbon">{combo.tag}</span>
         <span className="save">Save ₹{combo.was - combo.price}</span>
       </div>
@@ -221,9 +222,19 @@ export default function App() {
   const current = CATEGORIES.find((c) => c.id === cat)
   const filter = useMenuFilter(CATEGORIES, cat)
   const [picked, setPicked] = useState(null)
+  // the quick view keeps showing the last dish during its close animation, so keep its extras too
+  const lastPicked = useRef(null)
+  if (picked) lastPicked.current = picked
+  const qvItem = picked ?? lastPicked.current
   const [sceneReady, setSceneReady] = useState(false)
 
   useEffect(() => requestShots(cat, true), [cat])
+  useEffect(() => {
+    const catalog = new Map()
+    CATEGORIES.forEach((c) => c.items.forEach((it) => catalog.set(`${c.id}:${it.name}`, { name: it.name, price: it.price, nonveg: !!it.nonveg })))
+    COMBOS.forEach((c) => catalog.set(`${c.shot[0]}:${c.name}`, { name: c.name, price: c.price, nonveg: false }))
+    syncCart(catalog)
+  }, [])
   // search results can span many categories: render the ones on screen first
   useEffect(() => {
     if (filter.searching) [...new Set(filter.items.map((it) => it.cat))].reverse().forEach((c) => requestShots(c, true))
@@ -471,9 +482,9 @@ export default function App() {
       <QuickView
         item={picked}
         onClose={() => setPicked(null)}
-        suggestions={pairingsFor(picked, CATEGORIES)}
+        suggestions={pairingsFor(qvItem, CATEGORIES)}
         onSelect={setPicked}
-        actions={picked && <AddButton item={picked} cat={picked.cat ?? picked.shot[0]} index={picked.index ?? picked.shot[1]} />}
+        actions={qvItem && <AddButton item={qvItem} cat={qvItem.cat ?? qvItem.shot[0]} index={qvItem.index ?? qvItem.shot[1]} />}
       />
     </>
   )

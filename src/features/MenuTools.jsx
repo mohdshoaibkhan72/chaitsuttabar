@@ -37,7 +37,8 @@ export function MenuTools({ filter, resultCount }) {
   // these buttons can disappear once results change, so hand focus back to the search box
   const then = (fn) => () => {
     fn()
-    input.current?.focus()
+    // on touch screens refocusing would reopen the keyboard and scroll the page (which moves the 3D camera)
+    if (!window.matchMedia?.('(pointer: coarse)').matches) input.current?.focus({ preventScroll: true })
   }
   const clear = then(() => setQuery(''))
 

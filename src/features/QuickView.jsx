@@ -36,7 +36,8 @@ function unlockScroll() {
 }
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-const focusables = (root) => [...root.querySelectorAll(FOCUSABLE)].filter((el) => el.getClientRects().length > 0)
+// visibility:hidden controls (e.g. the inactive half of an Add button) still have rects but can't take focus
+const focusables = (root) => [...root.querySelectorAll(FOCUSABLE)].filter((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden')
 
 /* ---------- 3D studio ---------- */
 
@@ -302,7 +303,7 @@ function usePicture(name, shotKey) {
 function Still({ item, note }) {
   const [cat, index] = item.shot || (DISHES[item.cat] ? [item.cat, item.index || 0] : [])
   const shotKey = cat ? `${cat}:${index % SHOTS_PER_CATEGORY}` : ''
-  const [src, onError] = usePicture(item.id || item.name, shotKey)
+  const [src, onError] = usePicture(item.name, shotKey)
   const [loaded, setLoaded] = useState(null)
   useEffect(() => {
     if (cat) requestShots(cat, true)
