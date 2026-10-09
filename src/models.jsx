@@ -60,6 +60,14 @@ function smoothLathe(pts, seg = 64, n = 48) {
   return new THREE.LatheGeometry(c.getSpacedPoints(n).map((p) => new THREE.Vector2(Math.max(0, p.x), Math.max(lo, p.y))), seg)
 }
 
+// shared plate/bowl shapes: built once and reused by every mount (and every studio shot)
+const samosaPlateGeo = once(() => smoothLathe([[0, 0], [1.1, 0], [1.5, 0.1], [1.6, 0.18], [1.62, 0.205], [1.58, 0.215], [1.45, 0.14], [1.0, 0.07], [0, 0.07]], 72, 64))
+const chutneyBowlGeo = once(() => smoothLathe([[0, 0], [0.18, 0], [0.33, 0.18], [0.345, 0.215], [0.325, 0.222], [0.17, 0.05], [0, 0.05]], 40, 36))
+const jamunBowlGeo = once(() => smoothLathe([[0, 0], [0.4, 0], [0.8, 0.35], [0.99, 0.72], [1.03, 0.77], [1.0, 0.79], [0.97, 0.765], [0.76, 0.4], [0.38, 0.06], [0, 0.06]], 72, 80))
+const pastaPlateGeo = once(() => smoothLathe([[0, 0], [0.95, 0], [1.4, 0.08], [1.7, 0.225], [1.75, 0.26], [1.71, 0.275], [1.4, 0.15], [0.9, 0.11], [0, 0.11]], 72, 56))
+const ramekinGeo = once(() => smoothLathe([[0, 0], [0.2, 0], [0.27, 0.03], [0.3, 0.2], [0.31, 0.23], [0.28, 0.23], [0.25, 0.06], [0, 0.06]], 40, 32))
+const maggiBowlGeo = once(() => smoothLathe([[0, 0], [0.5, 0], [0.9, 0.5], [1.16, 0.98], [1.2, 1.04], [1.17, 1.07], [1.14, 1.045], [0.87, 0.56], [0.46, 0.08], [0, 0.08]], 72, 90))
+
 // Top-down uv so round foods (pepperoni) can use a flat photo-like texture.
 function planarUV(geo, r) {
   const p = geo.attributes.position
@@ -594,8 +602,8 @@ const chiliGeo = once(() => {
 })
 
 export function Samosa(props) {
-  const plate = useMemo(() => smoothLathe([[0, 0], [1.1, 0], [1.5, 0.1], [1.6, 0.18], [1.62, 0.205], [1.58, 0.215], [1.45, 0.14], [1.0, 0.07], [0, 0.07]], 72, 64), [])
-  const bowl = useMemo(() => smoothLathe([[0, 0], [0.18, 0], [0.33, 0.18], [0.345, 0.215], [0.325, 0.222], [0.17, 0.05], [0, 0.05]], 40, 36), [])
+  const plate = samosaPlateGeo()
+  const bowl = chutneyBowlGeo()
   const spots = [
     { p: [-0.48, 0.07, 0.12], r: [0, 0.5, 0] },
     { p: [0.5, 0.07, 0.22], r: [0, 2.6, 0] },
@@ -684,7 +692,7 @@ const saffronGeo = once(() => {
 })
 
 export function GulabJamun(props) {
-  const bowl = useMemo(() => smoothLathe([[0, 0], [0.4, 0], [0.8, 0.35], [0.99, 0.72], [1.03, 0.77], [1.0, 0.79], [0.97, 0.765], [0.76, 0.4], [0.38, 0.06], [0, 0.06]], 72, 80), [])
+  const bowl = jamunBowlGeo()
   const pos = [[-0.3, 0.42, 0.15], [0.32, 0.44, 0.2], [0.0, 0.44, -0.38], [0.05, 0.86, 0.0]]
   const nuts = useMemo(() => {
     const r = rng(17)
@@ -1048,7 +1056,7 @@ const flakeMat = once(() => new THREE.MeshStandardMaterial({ color: '#f2e5c2', r
 const tomatoMat = once(() => new THREE.MeshPhysicalMaterial({ color: '#b02c1c', roughness: 0.28, clearcoat: 0.6, clearcoatRoughness: 0.15, normalMap: noiseNormalTex(), normalScale: new THREE.Vector2(0.15, 0.15) }))
 
 export function Pasta(props) {
-  const plate = useMemo(() => smoothLathe([[0, 0], [0.95, 0], [1.4, 0.08], [1.7, 0.225], [1.75, 0.26], [1.71, 0.275], [1.4, 0.15], [0.9, 0.11], [0, 0.11]], 72, 56), [])
+  const plate = pastaPlateGeo()
   const g = pastaGeo()
   return (
     <group {...props}>
@@ -1176,7 +1184,7 @@ function SandwichHalf(props) {
 }
 
 export function Sandwich(props) {
-  const ramekin = useMemo(() => smoothLathe([[0, 0], [0.2, 0], [0.27, 0.03], [0.3, 0.2], [0.31, 0.23], [0.28, 0.23], [0.25, 0.06], [0, 0.06]], 40, 32), [])
+  const ramekin = ramekinGeo()
   return (
     <group {...props}>
       <RoundedBox args={[3.6, 0.12, 2.5]} radius={0.05} smoothness={3} position={[0, 0.06, 0]}>
@@ -1228,7 +1236,7 @@ const veggieMat = once(() => new THREE.MeshPhysicalMaterial({ roughness: 0.3, cl
 const noodleMat = once(() => new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.3 }))
 
 export function MaggiBowl(props) {
-  const bowl = useMemo(() => smoothLathe([[0, 0], [0.5, 0], [0.9, 0.5], [1.16, 0.98], [1.2, 1.04], [1.17, 1.07], [1.14, 1.045], [0.87, 0.56], [0.46, 0.08], [0, 0.08]], 72, 90), [])
+  const bowl = maggiBowlGeo()
   const g = maggiGeo()
   return (
     <group {...props}>

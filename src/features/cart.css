@@ -64,7 +64,7 @@
 .cart-close:hover { border-color: var(--gold); transform: rotate(90deg); }
 .cart-close svg { width: 18px; height: 18px; stroke: var(--cream); stroke-width: 1.8; fill: none; stroke-linecap: round; }
 
-.cart-body { position: relative; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px 16px 18px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.cart-body { position: relative; flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 6px 16px 18px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 .cart-lines { list-style: none; }
 
 /* cart: lines (rows collapse via grid rows so neighbours glide) */

@@ -315,7 +315,7 @@ export function CartDrawer({ onBrowse }) {
     <>
       <div className={`cart-overlay ${open ? 'open' : ''}`} onClick={closeCart} aria-hidden="true" />
       <div id="cart-drawer" ref={panel} className={`cart-drawer ${open ? 'open' : ''}`} role="dialog" aria-modal="true" aria-labelledby="cart-title" tabIndex={-1}>
-        <header className="cart-head">
+        <div className="cart-head">
           <div className="cart-head-text">
             <p className="cart-kicker">{SITE.name}</p>
             <h2 id="cart-title">Your order</h2>
@@ -326,7 +326,7 @@ export function CartDrawer({ onBrowse }) {
               <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
             </svg>
           </button>
-        </header>
+        </div>
 
         <div className="cart-body">
           {lines.length ? (

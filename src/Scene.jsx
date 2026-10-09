@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo, useRef } from 'react'
+import React, { Suspense, memo, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer, Sparkles } from '@react-three/drei'
@@ -134,6 +134,17 @@ function Stage({ i, children }) {
   )
 }
 
+// memoized so a category or theme change doesn't re-capture the environment map
+const SceneEnv = memo(function SceneEnv() {
+  return (
+    <Environment resolution={256}>
+      <Lightformer form="rect" intensity={2.2} color="#ffffff" position={[-6, 5, 6]} scale={[10, 6, 1]} />
+      <Lightformer form="rect" intensity={1.4} color="#ffd9b0" position={[7, 3, -4]} scale={[8, 4, 1]} />
+      <Lightformer form="ring" intensity={2.5} color="#fff4e0" position={[0, 8, 0]} scale={7} rotation-x={Math.PI / 2} />
+    </Environment>
+  )
+})
+
 function World({ category, theme }) {
   const [Dish, scale] = DISHES[category] || DISHES.chai
   const lights = useRef({})
@@ -146,11 +157,7 @@ function World({ category, theme }) {
       <ambientLight ref={(el) => (lights.current.ambient = el)} intensity={0.35} />
       <hemisphereLight ref={(el) => (lights.current.hemi = el)} args={['#ffe8cc', '#2a1a10', 0.5]} />
       <Sun />
-      <Environment resolution={256}>
-        <Lightformer form="rect" intensity={2.2} color="#ffffff" position={[-6, 5, 6]} scale={[10, 6, 1]} />
-        <Lightformer form="rect" intensity={1.4} color="#ffd9b0" position={[7, 3, -4]} scale={[8, 4, 1]} />
-        <Lightformer form="ring" intensity={2.5} color="#fff4e0" position={[0, 8, 0]} scale={7} rotation-x={Math.PI / 2} />
-      </Environment>
+      <SceneEnv />
 
       {/* 1 · hero: a ring of everything we serve */}
       <Stage i={0}>
@@ -221,7 +228,7 @@ function World({ category, theme }) {
 }
 
 // Film-style finishing: glow on lanterns/neon, background blur around the dish, tone mapping.
-function Effects({ theme }) {
+const Effects = memo(function Effects({ theme }) {
   const dof = useRef()
   useFrame(() => {
     if (dof.current?.target) dof.current.target.set(store.focus.x, -0.3, store.focus.z)
@@ -235,7 +242,7 @@ function Effects({ theme }) {
       <SMAA />
     </EffectComposer>
   )
-}
+})
 
 const lowPower = typeof window !== 'undefined' && (window.matchMedia('(max-width: 800px)').matches || window.matchMedia('(pointer: coarse)').matches)
 
@@ -251,10 +258,12 @@ function ReadySignal({ onReady }) {
   return null
 }
 
-export default function Scene({ category, theme, onReady }) {
+// `paused` stops the render loop while an overlay (cart, quick view) covers the scene
+export default memo(function Scene({ category, theme, onReady, paused }) {
   return (
     <Canvas
       shadows
+      frameloop={paused ? 'never' : 'always'}
       dpr={[1, lowPower ? 1.5 : 1.75]}
       camera={{ fov: 45, near: 0.1, far: 200, position: [0, 2.8, 9.5] }}
       gl={{ antialias: lowPower, powerPreference: 'high-performance', toneMapping: lowPower ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping, toneMappingExposure: 1.05 }}
@@ -267,4 +276,4 @@ export default function Scene({ category, theme, onReady }) {
       </Suspense>
     </Canvas>
   )
-}
+})

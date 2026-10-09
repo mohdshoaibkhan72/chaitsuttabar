@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import React, { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import * as THREE from 'three'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
@@ -22,11 +22,12 @@ const shots = new Map()
 const subs = new Set()
 let queue = []
 let current = null // key being shot right now
+const pending = new Set() // shot taken, image still encoding
 let wake = () => {}
 
 // Urgent requests (the open tab) jump the queue; background ones only append what's missing.
 export function requestShots(cat, urgent = false) {
-  const keys = Array.from({ length: SHOTS_PER_CATEGORY }, (_, i) => `${cat}:${i}`).filter((k) => !shots.has(k) && k !== current)
+  const keys = Array.from({ length: SHOTS_PER_CATEGORY }, (_, i) => `${cat}:${i}`).filter((k) => !shots.has(k) && !pending.has(k) && k !== current)
   if (urgent) queue = [...keys, ...queue.filter((k) => !keys.includes(k))]
   else queue = [...queue, ...keys.filter((k) => !queue.includes(k))]
   wake()
@@ -78,7 +79,7 @@ function Studio() {
 
   const next = () => {
     let k = queue.shift() || null
-    while (k && shots.has(k)) k = queue.shift() || null
+    while (k && (shots.has(k) || pending.has(k))) k = queue.shift() || null
     current = k
     jobRef.current = k
     frames.current = 0
@@ -116,8 +117,10 @@ function Studio() {
       if (dof.current?.target) dof.current.target.copy(sphere.center)
     }
     if (frames.current < 4) return invalidate()
+    pending.add(key)
     gl.domElement.toBlob(
       (b) => {
+        pending.delete(key)
         if (!b) return
         shots.set(key, URL.createObjectURL(b))
         subs.forEach((f) => f())
@@ -132,35 +135,45 @@ function Studio() {
   const [cat, idx] = job ? job.split(':') : []
   const [Dish, scale] = (cat && DISHES[cat]) || []
   const turn = idx != null ? ANGLES[Number(idx) % ANGLES.length].turn : 0
+  // the lights, table and post-processing never change: memoize them so a new shot only swaps the dish
+  const rig = useMemo(
+    () => (
+      <>
+        <color attach="background" args={['#1a110b']} />
+        <ambientLight intensity={0.3} />
+        <directionalLight position={[-4, 7, -2.5]} intensity={2.6} color="#ffe6c4" castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} shadow-normalBias={0.03}>
+          <orthographicCamera attach="shadow-camera" args={[-4, 4, 4, -4, 0.5, 20]} />
+        </directionalLight>
+        <Environment resolution={128}>
+          <Lightformer form="rect" intensity={2.4} color="#ffffff" position={[3, 5, 5]} scale={[8, 5, 1]} />
+          <Lightformer form="rect" intensity={1.2} color="#ffd2a0" position={[-6, 3, -2]} scale={[6, 4, 1]} />
+        </Environment>
+        <Table />
+        <EffectComposer multisampling={0}>
+          <DepthOfField ref={dof} target={[0, 0.5, 0]} worldFocusRange={2.2} bokehScale={3.2} height={420} />
+          <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+          <SMAA />
+        </EffectComposer>
+      </>
+    ),
+    []
+  )
   return (
     <>
-      <color attach="background" args={['#1a110b']} />
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[-4, 7, -2.5]} intensity={2.6} color="#ffe6c4" castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} shadow-normalBias={0.03}>
-        <orthographicCamera attach="shadow-camera" args={[-4, 4, 4, -4, 0.5, 20]} />
-      </directionalLight>
-      <Environment resolution={128}>
-        <Lightformer form="rect" intensity={2.4} color="#ffffff" position={[3, 5, 5]} scale={[8, 5, 1]} />
-        <Lightformer form="rect" intensity={1.2} color="#ffd2a0" position={[-6, 3, -2]} scale={[6, 4, 1]} />
-      </Environment>
-      <Table />
+      {rig}
       {Dish && (
-        <Shadowed key={job}>
+        // keyed by category: the six angles of one dish reuse the mounted model and only turn it
+        <Shadowed key={cat}>
           <group ref={dish} rotation-y={turn}>
             <Dish scale={scale} />
           </group>
         </Shadowed>
       )}
-      <EffectComposer multisampling={0} disableNormalPass>
-        <DepthOfField ref={dof} target={[0, 0.5, 0]} worldFocusRange={2.2} bokehScale={3.2} height={420} />
-        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-        <SMAA />
-      </EffectComposer>
     </>
   )
 }
 
-export function SnapshotStudio() {
+export const SnapshotStudio = memo(function SnapshotStudio() {
   return (
     <div aria-hidden style={{ position: 'fixed', left: -10000, top: 0, width: W, height: H, pointerEvents: 'none' }}>
       <Canvas
@@ -177,4 +190,4 @@ export function SnapshotStudio() {
       </Canvas>
     </div>
   )
-}
+})

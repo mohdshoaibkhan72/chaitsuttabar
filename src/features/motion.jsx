@@ -68,7 +68,7 @@ export function SplitText({ text, as: Tag = 'span', className, delay = 0, stagge
   })
 
   return (
-    <Tag ref={ref} className={cx('st-text', shown && 'st-in', className)} aria-label={str} style={{ '--st-delay': `${delay}ms`, '--st-stagger': `${stagger}ms` }}>
+    <Tag ref={ref} className={cx('st-text', shown && 'st-in', className)} style={{ '--st-delay': `${delay}ms`, '--st-stagger': `${stagger}ms` }}>
       <span className="st-sr">{str}</span>
       {words}
     </Tag>

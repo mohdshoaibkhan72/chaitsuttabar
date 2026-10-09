@@ -66,3 +66,6 @@
   .mt-status > * { animation: none; }
   .mt-search, .mt-veg, .mt-sort, .mt-track, .mt-thumb, .mt-clear, .mt-ideas button { transition: none; }
 }
+
+/* iOS zooms into form fields under 16px; keep the search and sort controls at 16px on touch screens */
+@media (pointer: coarse) { .mt-search input, .mt-sort select { font-size: 16px; } }

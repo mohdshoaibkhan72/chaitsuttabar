@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Scene from './Scene.jsx'
 import { store } from './store.js'
 import { CATEGORIES, COMBOS } from './menuData.js'
 import { AddButton, CartButton, CartDrawer } from './features/Cart.jsx'
-import { syncCart } from './features/cart.js'
+import { syncCart, useCartOpen } from './features/cart.js'
 import { useMenuFilter, pairingsFor } from './features/menuFilter.js'
 import { MenuTools } from './features/MenuTools.jsx'
 import QuickView from './features/QuickView.jsx'
@@ -105,13 +105,16 @@ function Photo({ src, alt, className, frame }) {
 }
 
 // Card image: the real photo if one exists, otherwise a studio render of the 3D dish.
+// photos that 404'd once: later mounts go straight to the studio render
+const missingPhotos = new Set()
+
 function DishImage({ cat, index, name }) {
   const photo = `${BASE}images/items/${slug(name)}.jpg`
-  const [state, setState] = useState('photo') // photo -> render when the file is missing
+  const [state, setState] = useState(() => (missingPhotos.has(photo) ? 'render' : 'photo')) // photo -> render when the file is missing
   const [loaded, setLoaded] = useState(false)
   const shot = useShot(`${cat}:${index % SHOTS_PER_CATEGORY}`)
   useEffect(() => {
-    setState('photo')
+    setState(missingPhotos.has(photo) ? 'render' : 'photo')
     setLoaded(false)
   }, [photo])
   const src = state === 'photo' ? photo : shot
@@ -126,7 +129,11 @@ function DishImage({ cat, index, name }) {
           decoding="async"
           className={loaded ? 'in' : ''}
           onLoad={() => setLoaded(true)}
-          onError={() => state === 'photo' && setState('render')}
+          onError={() => {
+            if (state !== 'photo') return
+            missingPhotos.add(photo)
+            setState('render')
+          }}
         />
       )}
     </>
@@ -151,6 +158,7 @@ function MenuCard({ it, cat, index, delay = 0, onOpen }) {
             {it.name}
           </button>
         </h3>
+        <span className="sr-only">{it.nonveg ? 'Non-veg' : 'Veg'}</span>
         <p>{it.desc}</p>
         <div className="mcard-foot">
           <span className="price">₹{it.price}</span>
@@ -182,7 +190,10 @@ function ComboCard({ combo, delay, onOpen }) {
         <p>{combo.desc}</p>
         <div className="mcard-foot">
           <span className="price">
-            ₹{combo.price} <s>₹{combo.was}</s>
+            ₹{combo.price}{' '}
+            <s>
+              <span className="sr-only">instead of </span>₹{combo.was}
+            </s>
           </span>
           <AddButton item={combo} cat={cat} index={index} sourceRef={media} />
         </div>
@@ -227,6 +238,21 @@ export default function App() {
   if (picked) lastPicked.current = picked
   const qvItem = picked ?? lastPicked.current
   const [sceneReady, setSceneReady] = useState(false)
+  const onSceneReady = useCallback(() => setSceneReady(true), [])
+  const cartOpen = useCartOpen()
+  // keep keyboard focus off the page while the preloader covers it
+  const [revealed, setRevealed] = useState(false)
+  useEffect(() => {
+    const done = () => setRevealed(true)
+    window.addEventListener('preloader:done', done)
+    const t = setTimeout(done, 8000)
+    return () => {
+      window.removeEventListener('preloader:done', done)
+      clearTimeout(t)
+    }
+  }, [])
+  const hideWhileLoading = revealed ? {} : { inert: '' }
+  const [bandPaused, setBandPaused] = useState(false)
 
   useEffect(() => requestShots(cat, true), [cat])
   useEffect(() => {
@@ -239,22 +265,29 @@ export default function App() {
   useEffect(() => {
     if (filter.searching) [...new Set(filter.items.map((it) => it.cat))].reverse().forEach((c) => requestShots(c, true))
   }, [filter.searching, filter.items])
+  // pre-render the other categories' card images gently: one category at a time, never while scrolling
   useEffect(() => {
-    const t = setTimeout(() => CATEGORIES.forEach((c) => requestShots(c.id)), 4000)
-    return () => clearTimeout(t)
-  }, [])
+    if (!sceneReady) return
+    let i = 0
+    const id = setInterval(() => {
+      if (Math.abs(store.vel) > 1) return
+      if (i >= CATEGORIES.length) return clearInterval(id)
+      requestShots(CATEGORIES[i++].id)
+    }, 1500)
+    return () => clearInterval(id)
+  }, [sceneReady])
 
   return (
     <>
       <Preloader ready={sceneReady} />
       <ScrollProgress />
       <div className="canvas-wrap">
-        <Scene category={cat} theme={theme} onReady={() => setSceneReady(true)} />
+        <Scene category={cat} theme={theme} onReady={onSceneReady} paused={cartOpen || !!picked} />
       </div>
-      <SnapshotStudio />
+      {sceneReady && <SnapshotStudio />}
       <div className="vignette" />
 
-      <header className="nav">
+      <header className="nav" {...hideWhileLoading}>
         <button className="logo" onClick={() => go('home')} aria-label="Chai Sutta Bar home">
           <span className="logo-mark">☕</span> Chai Sutta <b>Bar</b>
         </button>
@@ -288,7 +321,7 @@ export default function App() {
         ))}
       </div>
 
-      <main>
+      <main {...hideWhileLoading}>
         <section id="home" className="sec hero">
           <div className="col left">
             <p className="kicker">Chai · Pizza · Burgers · Pasta · Coffee</p>
@@ -355,8 +388,19 @@ export default function App() {
           </div>
         </section>
 
-        <div className="band" aria-hidden="true">
+        <div className={`band ${bandPaused ? 'paused' : ''}`}>
           <Marquee items={['Kulhad chai', 'Midnight Maggi', 'Wood-fired pizza', 'Cold coffee', 'Hot samosa', 'Smash burgers', 'Creamy pasta', 'Virgin mojito']} />
+          <button type="button" className="band-toggle" onClick={() => setBandPaused(!bandPaused)} aria-pressed={bandPaused} aria-label={bandPaused ? 'Play the scrolling ribbon' : 'Pause the scrolling ribbon'}>
+            {bandPaused ? (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5.5v13l10-6.5z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5.5v13M16 5.5v13" />
+              </svg>
+            )}
+          </button>
         </div>
 
         <section id="menu" className="sec menu">
