@@ -77,7 +77,7 @@ function useScrollStage() {
 }
 
 // Fades children in when they enter the viewport.
-function Reveal({ children, className = '', delay = 0, as: Tag = 'div' }) {
+function Reveal({ children, className = '', delay = 0, type = '', as: Tag = 'div' }) {
   const ref = useRef()
   const [seen, setSeen] = useState(false)
   useEffect(() => {
@@ -86,7 +86,7 @@ function Reveal({ children, className = '', delay = 0, as: Tag = 'div' }) {
     return () => io.disconnect()
   }, [])
   return (
-    <Tag ref={ref} className={`reveal ${seen ? 'in' : ''} ${className}`} style={{ transitionDelay: `${delay}ms` }}>
+    <Tag ref={ref} className={`${type === 'left' ? 'reveal-left' : type === 'scale' ? 'reveal-scale' : 'reveal'} ${seen ? 'in' : ''} ${className}`} style={{ transitionDelay: `${delay}ms` }}>
       {children}
     </Tag>
   )
@@ -199,6 +199,16 @@ function ComboCard({ combo, delay, onOpen }) {
         </div>
       </div>
     </article>
+  )
+}
+
+function HeroTitle() {
+  return (
+    <h1 aria-label="Chai Sutta Bar">
+      <span className="word-reveal" aria-hidden="true"><span className="anim-word" style={{ animationDelay: '0.35s' }}>Chai</span></span>{' '}
+      <span className="word-reveal" aria-hidden="true"><span className="anim-word gold-word" style={{ animationDelay: '0.55s' }}>Sutta</span></span>{' '}
+      <span className="word-reveal" aria-hidden="true"><span className="anim-word" style={{ animationDelay: '0.72s' }}>Bar</span></span>
+    </h1>
   )
 }
 
@@ -330,20 +340,28 @@ export default function App() {
       <main {...hideWhileLoading}>
         <section id="home" className="sec hero">
           <div className="col left">
-            <p className="kicker">Chai · Pizza · Burgers · Pasta · Coffee</p>
-            <h1>
-              <SplitText text="Chai" /> <SplitText as="em" text="Sutta" delay={140} /> <SplitText text="Bar" delay={300} />
-            </h1>
-            <p className="lead">From our first kulhad of chai to wood-fired pizza, juicy burgers, creamy pasta, cold coffee and midnight Maggi. Everything fresh, everything hot.</p>
+            <div className="badge">
+              <span className="badge-dot" />
+              Mumbai's Finest
+            </div>
+            <p className="kicker">
+              <span className="kicker-line" />
+              Chai · Pizza · Burgers · Pasta · Coffee
+            </p>
+            <HeroTitle />
+            <p className="lead">
+              From our first kulhad of chai to wood-fired pizza, juicy burgers, creamy pasta, cold coffee and midnight Maggi. Everything fresh, everything hot — served with
+              soul.
+            </p>
             <div className="cta">
               <Magnetic>
                 <button className="btn primary" onClick={() => go('menu')}>
-                  Explore the menu
+                  Explore the Menu ↓
                 </button>
               </Magnetic>
               <Magnetic>
                 <button className="btn" onClick={() => go('visit')}>
-                  Find us
+                  Find Us
                 </button>
               </Magnetic>
             </div>
@@ -360,15 +378,20 @@ export default function App() {
         <section id="story" className="sec">
           <div className="col right">
             <Reveal>
-              <p className="kicker">Our story</p>
+              <p className="kicker">
+                <span className="kicker-line" />
+                Our Story
+              </p>
               <h2>
-                <SplitText text="One kettle. A whole kitchen." />
+                <SplitText text="One kettle." />
+                <br />
+                <SplitText text="A whole kitchen." delay={280} />
               </h2>
             </Reveal>
             <Reveal delay={120}>
               <p className="lead">
-                We started with a single brass kettle and a simple idea: good food tastes better shared. Today the same kitchen that brews our chai also bakes pizza, grills burgers
-                and whips up cold coffee, all made fresh to order.
+                We started with a single brass kettle and a simple idea: good food tastes better when shared. Today the same kitchen brews our chai, bakes pizza, grills burgers
+                and whips up cold coffee — fresh to order, day and deep into the night.
               </p>
             </Reveal>
             <Reveal delay={240} className="stats">
@@ -412,13 +435,16 @@ export default function App() {
         <section id="menu" className="sec menu">
           <div className="col left wide">
             <Reveal>
-              <p className="kicker">The menu</p>
+              <p className="kicker">
+                <span className="kicker-line" />
+                The Menu
+              </p>
               <h2>
                 <SplitText text="Pick a dish. Watch it spin." />
               </h2>
             </Reveal>
             <MenuTools filter={filter} resultCount={filter.items.length} />
-            <div className={`tabs ${filter.searching ? 'dim' : ''}`} role="tablist">
+            <div className={`cat-tabs ${filter.searching ? 'dim' : ''}`} role="tablist" aria-label="Menu categories">
               {CATEGORIES.map((c) => (
                 <button
                   key={c.id}
@@ -447,7 +473,10 @@ export default function App() {
             </div>
             <div className="combos">
               <Reveal>
-                <p className="kicker">Combos & deals</p>
+                <p className="kicker">
+                  <span className="kicker-line" />
+                  Combos & Deals
+                </p>
                 <h3 className="combos-title">Better together.</h3>
               </Reveal>
               <div className="menu-grid">
@@ -462,18 +491,24 @@ export default function App() {
         <section id="vibe" className="sec">
           <div className="col right">
             <Reveal>
-              <p className="kicker">The vibe</p>
+              <p className="kicker">
+                <span className="kicker-line" />
+                The Vibe
+              </p>
               <h2>
-                <SplitText text="Lanterns, neon & good company." />
+                <SplitText text="Lanterns, warmth" />
+                <br />
+                <SplitText text="& good company." delay={280} />
               </h2>
             </Reveal>
+            <span className="gold-divider" />
             <div className="cards">
               {[
-                ['🎶', 'Live music nights', 'Acoustic sets and open mics every weekend.'],
-                ['🍕', 'Made fresh, served hot', 'Pizza, burgers & pasta straight from the kitchen.'],
-                ['🌙', 'Open past midnight', 'The adda stays warm long after the city sleeps.'],
+                ['🎶', 'Live Music Nights', 'Acoustic sets and open mics every weekend.'],
+                ['🍕', 'Made Fresh, Served Hot', 'Everything straight from the kitchen — no shortcuts.'],
+                ['🌙', 'Open Past Midnight', 'The adda stays warm long after the city sleeps.'],
               ].map(([icon, t, d], i) => (
-                <Reveal key={t} delay={i * 120} className="card">
+                <Reveal key={t} delay={i * 120} className="card" type="scale">
                   <span>{icon}</span>
                   <h3>{t}</h3>
                   <p>{d}</p>
@@ -486,9 +521,15 @@ export default function App() {
         <section id="visit" className="sec visit">
           <div className="col center">
             <Reveal>
-              <p className="kicker">Visit us</p>
+              <p className="kicker" style={{ justifyContent: 'center' }}>
+                <span className="kicker-line" />
+                Visit Us
+                <span className="kicker-line" />
+              </p>
               <h2>
-                <SplitText text="Your cup is waiting." />
+                <SplitText text="Your cup" />
+                <br />
+                <SplitText text="is waiting." delay={220} />
               </h2>
               <div className="visit-badge">
                 <OpenNowBadge />
@@ -519,11 +560,11 @@ export default function App() {
             </Reveal>
             <Reveal delay={240}>
               <button className="btn primary" onClick={() => go('home')}>
-                Back to the top ↑
+                Back to the Top ↑
               </button>
             </Reveal>
             <footer>
-              © {new Date().getFullYear()} {SITE.name} · Brewed with love
+              © {new Date().getFullYear()} {SITE.name} · Brewed with love ☕
             </footer>
           </div>
         </section>

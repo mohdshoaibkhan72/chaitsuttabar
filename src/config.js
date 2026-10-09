@@ -5,7 +5,7 @@ export const SITE = {
   // Leave empty and the "Order on WhatsApp" button lets the customer pick a chat.
   whatsapp: '',
   phone: '+91 00000 00000',
-  email: 'hello@yourdomain.com',
+  email: 'hello@chaitsuttabar.com',
   address: ['Your street address here', 'City, State – PIN'],
   // day: 0 = Sunday … 6 = Saturday. `close` may be past midnight (e.g. '01:00').
   hours: [
