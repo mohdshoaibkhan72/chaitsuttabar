@@ -820,3 +820,74 @@ footer { margin-top: 60px; font-size: 0.76rem; color: var(--muted); opacity: 0.5
   .anim-word, .cat-display, .cat-title, .menu-num, .items li { animation: none; opacity: 1; transform: none; }
   .scroll-hint i, .badge-dot { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   COMPONENT TOKENS — the cart, quick view, menu tools, motion
+   pieces and menu cards use these names; map them onto the
+   design system above so every component follows the theme.
+═══════════════════════════════════════════════════════════ */
+:root {
+  --line: var(--b-gold);
+  --glass-strong: var(--glass-2);
+  --on-accent: var(--on-gold);
+  --menu-bg: var(--glass-2);
+  --nav-fade: var(--nav-bg);
+  --shadow: rgba(0, 0, 0, 0.75);
+  --card-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+}
+:root[data-theme='light'] {
+  --shadow: rgba(255, 244, 226, 0.9);
+  --card-shadow: 0 14px 34px rgba(110, 70, 30, 0.16);
+}
+/* inside these components secondary text must stay readable on dark cards (4.5:1) */
+.cart-drawer, .qv-root, .mt-tools, .mcard, .on-badge, .combos, .band { --muted: var(--text-soft); }
+
+.col.wide { max-width: 780px; }
+.cat-tabs.dim button { opacity: 0.55; }
+
+/* ═══════════════════════════════════════════════════════════
+   MENU CARDS
+═══════════════════════════════════════════════════════════ */
+.menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+.mcard { position: relative; cursor: pointer; border-radius: 20px; overflow: hidden; background: var(--card); border: 1px solid var(--line); box-shadow: var(--card-shadow); animation: rise 0.55s both; transition: transform 0.35s, border-color 0.35s; }
+.mcard:hover { transform: translateY(-6px); border-color: var(--gold); }
+.mcard-media { position: relative; aspect-ratio: 4 / 3; background: #1a110b; overflow: hidden; }
+.mcard-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.6s, transform 0.9s ease; }
+.mcard-media img.in { opacity: 1; }
+.mcard:hover .mcard-media img { transform: scale(1.07); }
+.mcard-media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(transparent 60%, rgba(0, 0, 0, 0.35)); pointer-events: none; }
+.mcard .ribbon { position: absolute; z-index: 1; top: 12px; left: 12px; padding: 5px 11px; border-radius: 99px; background: var(--gold); color: var(--on-accent); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3); }
+.mcard .veg { position: absolute; z-index: 1; top: 12px; right: 12px; background: #fff; border-radius: 3px; width: 18px; height: 18px; }
+.mcard-body { padding: 14px 16px 16px; }
+.mcard h3 { font-family: var(--serif); font-size: 1.14rem; font-weight: 600; line-height: 1.25; color: var(--text); }
+.mcard p { color: var(--muted); font-size: 0.82rem; line-height: 1.5; margin: 5px 0 12px; min-height: 2.5em; }
+.mcard-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.mcard .price { font-size: 1.25rem; }
+.mcard .price s { font-family: var(--sans); font-size: 0.8rem; font-weight: 400; color: var(--muted); margin-left: 4px; }
+.mcard-open { font: inherit; color: inherit; text-align: left; padding: 0; background: none; border: 0; cursor: pointer; }
+.mcard-open:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+.shimmer { position: absolute; inset: 0; background: linear-gradient(100deg, #1f150e 30%, #33241a 50%, #1f150e 70%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* combos */
+.combos { margin-top: 56px; }
+.combos-title { font-family: var(--serif); font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; letter-spacing: -0.01em; margin-bottom: 18px; text-shadow: 0 4px 30px var(--shadow); }
+.mcard .save { position: absolute; z-index: 1; left: 12px; bottom: 12px; padding: 4px 10px; border-radius: 99px; background: rgba(20, 120, 60, 0.92); color: #fff; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; }
+
+/* hero / visit extras */
+.hero-badge { margin-top: 22px; }
+.visit-badge { display: flex; justify-content: center; margin: -4px 0 6px; }
+.visit-grid a { color: inherit; text-decoration: none; border-bottom: 1px dashed var(--line); }
+.visit-grid a:hover { color: var(--gold); }
+
+/* scrolling food ribbon */
+.band { position: relative; z-index: 5; padding: 26px 0; border-block: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(10px); }
+.band-toggle { position: absolute; right: clamp(12px, 3vw, 28px); bottom: 10px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--glass-strong); display: grid; place-items: center; opacity: 0.75; transition: opacity 0.2s, border-color 0.2s; }
+.band-toggle:hover, .band-toggle:focus-visible { opacity: 1; border-color: var(--gold); }
+.band-toggle svg { width: 16px; height: 16px; stroke: var(--gold); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.band-toggle[aria-pressed='true'] svg { fill: var(--gold); }
+.band.paused .mq-track { animation-play-state: paused; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+@media (prefers-reduced-motion: reduce) { .mcard { animation: none; } .shimmer { animation: none; } }

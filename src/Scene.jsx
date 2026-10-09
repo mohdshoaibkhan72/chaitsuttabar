@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo, useRef } from 'react'
+import React, { Suspense, memo, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer, Sparkles } from '@react-three/drei'
@@ -255,6 +255,17 @@ function Stage({ i, children, uplightColor = '#ff9a30' }) {
 /* ─────────────────────────────────────────────────────────
    WORLD — all scene content
 ───────────────────────────────────────────────────────── */
+// memoized so a category or theme change doesn't re-capture the environment map
+const SceneEnv = memo(function SceneEnv() {
+  return (
+    <Environment resolution={128}>
+      <Lightformer form="rect"  intensity={4.5} color="#ffe8cc" position={[-8, 7, 8]}  scale={[14, 8, 1]} />
+      <Lightformer form="rect"  intensity={2.2} color="#ffcf90" position={[9,  4, -6]} scale={[10, 5, 1]} />
+      <Lightformer form="ring"  intensity={1.8} color="#ffe4b0" position={[0,  10, 0]} scale={7}  rotation-x={Math.PI / 2} />
+    </Environment>
+  )
+})
+
 function World({ category, theme }) {
   const [Dish, scale] = DISHES[category] || DISHES.chai
   const lights = useRef({})
@@ -274,11 +285,7 @@ function World({ category, theme }) {
       <Sun />
 
       {/* Studio lighting — warm terracotta key */}
-      <Environment resolution={128}>
-        <Lightformer form="rect"  intensity={4.5} color="#ffe8cc" position={[-8, 7, 8]}  scale={[14, 8, 1]} />
-        <Lightformer form="rect"  intensity={2.2} color="#ffcf90" position={[9,  4, -6]} scale={[10, 5, 1]} />
-        <Lightformer form="ring"  intensity={1.8} color="#ffe4b0" position={[0,  10, 0]} scale={7}  rotation-x={Math.PI / 2} />
-      </Environment>
+      <SceneEnv />
 
       <Stage i={0} uplightColor="#C65D2E">
         <Spin speed={0.18} wobble>
@@ -396,7 +403,7 @@ function World({ category, theme }) {
 /* ─────────────────────────────────────────────────────────
    POST FX — Bloom + DOF + Tone + Vignette
 ───────────────────────────────────────────────────────── */
-function Effects({ theme }) {
+const Effects = memo(function Effects({ theme }) {
   const dof = useRef()
   useFrame(() => {
     if (dof.current?.target) dof.current.target.set(store.focus.x, -0.1, store.focus.z)
@@ -425,7 +432,7 @@ function Effects({ theme }) {
       <SMAA />
     </EffectComposer>
   )
-}
+})
 
 /* ─────────────────────────────────────────────────────────
    CANVAS
@@ -434,10 +441,24 @@ const lowPower = typeof window !== 'undefined' &&
   (window.matchMedia('(max-width: 800px)').matches ||
    window.matchMedia('(pointer: coarse)').matches)
 
-export default function Scene({ category, theme }) {
+// Tells the page the scene has actually drawn a few frames (used to lift the preloader).
+function ReadySignal({ onReady }) {
+  const frames = useRef(0)
+  const cb = useRef(onReady)
+  cb.current = onReady
+  useFrame(() => {
+    if (frames.current > 3) return
+    if (++frames.current === 3) cb.current?.()
+  })
+  return null
+}
+
+// `paused` stops the render loop while an overlay (cart, quick view) covers the scene
+export default memo(function Scene({ category, theme, onReady, paused }) {
   return (
     <Canvas
       shadows
+      frameloop={paused ? 'never' : 'always'}
       dpr={[1, lowPower ? 1.5 : 2]}
       camera={{ fov: 44, near: 0.1, far: 180, position: [0, 2.2, 10.0] }}
       gl={{
@@ -452,7 +473,8 @@ export default function Scene({ category, theme }) {
         <Rig />
         <World category={category} theme={theme} />
         {!lowPower && <Effects theme={theme} />}
+        <ReadySignal onReady={onReady} />
       </Suspense>
     </Canvas>
   )
-}
+})

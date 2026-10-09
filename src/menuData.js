@@ -132,3 +132,11 @@ export const CATEGORIES = [
     ],
   },
 ]
+
+// Combo deals: `was` is the price of the items bought separately. `shot` picks the card image.
+export const COMBOS = [
+  { id: 'chai-samosa', name: 'Chai & Samosa', desc: 'Kulhad chai with two hot Punjabi samosas', price: 65, was: 70, tag: 'Evening classic', shot: ['snacks', 0] },
+  { id: 'maggi-coffee', name: 'Maggi + Cold Coffee', desc: 'Masala Maggi with a classic cold coffee', price: 149, was: 159, tag: 'Late-night fuel', shot: ['maggi', 1] },
+  { id: 'burger-meal', name: 'Burger Meal', desc: 'Cheese veg burger, crispy fries and a cola', price: 199, was: 228, tag: 'Best value', shot: ['burgers', 2] },
+  { id: 'pizza-mojitos', name: 'Pizza & Mojitos', desc: 'Margherita with two virgin mojitos', price: 299, was: 327, tag: 'Share it', shot: ['pizza', 3] },
+]

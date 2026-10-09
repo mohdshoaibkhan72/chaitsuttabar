@@ -5,5 +5,9 @@ import '@fontsource-variable/fraunces/full.css'
 import '@fontsource-variable/fraunces/full-italic.css'
 import '@fontsource-variable/manrope'
 import './styles.css'
+import './features/cart.css'
+import './features/menu-tools.css'
+import './features/quickview.css'
+import './features/motion.css'
 
 createRoot(document.getElementById('root')).render(<App />)
