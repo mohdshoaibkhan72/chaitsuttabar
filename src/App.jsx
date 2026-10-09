@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Scene from './Scene.jsx'
 import { store } from './store.js'
 import { CATEGORIES, COMBOS } from './menuData.js'
@@ -237,6 +237,10 @@ export default function App() {
   const lastPicked = useRef(null)
   if (picked) lastPicked.current = picked
   const qvItem = picked ?? lastPicked.current
+  const pairings = useMemo(() => pairingsFor(qvItem, CATEGORIES), [qvItem])
+  useEffect(() => {
+    ;[...new Set(pairings.map((p) => p.cat))].forEach((c) => requestShots(c, true))
+  }, [pairings])
   const [sceneReady, setSceneReady] = useState(false)
   const onSceneReady = useCallback(() => setSceneReady(true), [])
   const cartOpen = useCartOpen()
@@ -268,11 +272,13 @@ export default function App() {
   // pre-render the other categories' card images gently: one category at a time, never while scrolling
   useEffect(() => {
     if (!sceneReady) return
+    // combo cards sit right under the menu, so their dishes go first
+    const order = [...new Set([...COMBOS.map((c) => c.shot[0]), ...CATEGORIES.map((c) => c.id)])]
     let i = 0
     const id = setInterval(() => {
       if (Math.abs(store.vel) > 1) return
-      if (i >= CATEGORIES.length) return clearInterval(id)
-      requestShots(CATEGORIES[i++].id)
+      if (i >= order.length) return clearInterval(id)
+      requestShots(order[i++])
     }, 1500)
     return () => clearInterval(id)
   }, [sceneReady])
@@ -526,7 +532,7 @@ export default function App() {
       <QuickView
         item={picked}
         onClose={() => setPicked(null)}
-        suggestions={pairingsFor(qvItem, CATEGORIES)}
+        suggestions={pairings}
         onSelect={setPicked}
         actions={qvItem && <AddButton item={qvItem} cat={qvItem.cat ?? qvItem.shot[0]} index={qvItem.index ?? qvItem.shot[1]} />}
       />
